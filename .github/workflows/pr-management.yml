@@ -1,0 +1,77 @@
+name: PR Management
+
+on:
+  pull_request:
+    types: [opened, labeled, unlabeled, synchronize]
+
+jobs:
+  auto-label:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Auto label PR
+        uses: actions/labeler@v4
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          configuration-path: .github/labeler.yml
+          sync-labels: true
+  
+  assign-reviewer:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Assign reviewer
+        uses: kentaro-m/auto-assign-action@v1.2.2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+          configuration-path: .github/auto_assign.yml
+  
+  check-pr-title:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check PR title format
+        uses: deepakputhraya/action-pr-title@master
+        with:
+          regex: '^(feat|fix|docs|style|refactor|test|chore): .+'
+          allowed_prefixes: 'feat,fix,docs,style,refactor,test,chore'
+          prefix_case_sensitive: false
+  
+  check-conflicts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for conflicts
+        uses: eps1lon/actions-label-merge-conflict@v2
+        with:
+          dirtyLabel: 'conflicts'
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          commentOnDirty: '⚠️ This PR has merge conflicts. Please resolve them.'
+  
+  validate-changes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR changes
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const pr = context.payload.pull_request;
+            
+            // Check if PR has description
+            if (!pr.body || pr.body.length < 10) {
+              core.setFailed('PR description is required and must be at least 10 characters');
+            }
+            
+            // Check if PR has linked issue
+            const hasIssueLink = /(#\d+|https:\/\/github.com\/.*\/issues\/\d+)/.test(pr.body);
+            if (!hasIssueLink) {
+              core.warning('Consider linking an issue in the PR description');
+            }
+            
+            // Check file count
+            const files = await github.rest.pulls.listFiles({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number
+            });
+            
+            if (files.data.length > 100) {
+              core.warning(`Large PR detected (${files.data.length} files). Consider splitting into smaller PRs.`);
+            }

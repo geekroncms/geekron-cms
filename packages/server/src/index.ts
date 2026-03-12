@@ -7,6 +7,8 @@ import { tenantMiddleware } from './middleware/tenant';
 import { tenantIsolationMiddleware } from './middleware/tenant-isolation';
 import { authMiddleware } from './middleware/auth';
 import { apiKeyAuthMiddleware } from './middleware/api-key-auth';
+import { rateLimitMiddleware } from './middleware/rate-limit';
+import { quotaCheckMiddleware } from './middleware/quota-check';
 import { errorHandler } from './utils/errors';
 import { healthRoutes } from './routes/health';
 import { authRoutes } from './routes/auth';
@@ -16,11 +18,13 @@ import { collectionRoutes } from './routes/collections';
 import { collectionDataRoutes } from './routes/collection-data';
 import { fileRoutes } from './routes/files';
 import { apiKeysRoutes } from './routes/api-keys';
+import { quotaRoutes } from './routes/quotas';
 
 // Type definitions
 type Bindings = {
   DB: D1Database;
   BUCKET: R2Bucket;
+  KV: KVNamespace;
   JWT_SECRET: string;
   BUCKET_URL?: string;
   SUPABASE_URL: string;
@@ -40,6 +44,7 @@ type Variables = {
     plan: string;
   };
   safeDB: any; // Tenant-safe database proxy
+  quotaStatus: any; // Quota status from quota-check middleware
 };
 
 // Create application
@@ -72,6 +77,8 @@ const protectedApi = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 protectedApi.use('/*', apiKeyAuthMiddleware);
 protectedApi.use('/*', tenantMiddleware);
 protectedApi.use('/*', tenantIsolationMiddleware);
+protectedApi.use('/*', rateLimitMiddleware);
+protectedApi.use('/*', quotaCheckMiddleware);
 
 // Register protected routes
 protectedApi.route('/tenants', tenantRoutes);
@@ -80,6 +87,7 @@ protectedApi.route('/collections', collectionRoutes);
 protectedApi.route('/data', collectionDataRoutes);
 protectedApi.route('/files', fileRoutes);
 protectedApi.route('/api-keys', apiKeysRoutes);
+protectedApi.route('/quotas', quotaRoutes);
 
 // Mount protected routes
 api.route('/', protectedApi);

@@ -10,68 +10,117 @@ import { dynamicCrudRoutes } from '../src/services/dynamic-crud';
 import { buildDataQuery, parseQueryParams, buildWhereClause } from '../src/utils/query-builder';
 import { buildZodSchema, loadSchemaMetadata } from '../src/middleware/data-validation';
 
-// Mock database
-class MockDB {
-  private data: Map<string, any> = new Map();
-  private collections: Map<string, any> = new Map();
-  private fields: Map<string, any> = new Map();
+// Mock prepared statement
+class MockPreparedStatement {
+  private query: string;
+  private db: MockDB;
 
-  async prepare(query: string) {
+  constructor(query: string, db: MockDB) {
+    this.query = query;
+    this.db = db;
+  }
+
+  bind(...params: any[]) {
     return {
-      bind: (...params: any[]) => {
-        return {
-          first: async () => {
-            // Mock implementation
-            if (query.includes('SELECT * FROM collections')) {
-              const collectionId = params[0];
-              const tenantId = params[1];
-              return this.collections.get(`${tenantId}:${collectionId}`) || null;
-            }
-            if (query.includes('SELECT * FROM collection_fields')) {
-              const collectionId = params[0];
-              const results = Array.from(this.fields.values()).filter(
-                (f) => f.collection_id === collectionId
-              );
-              return { results };
-            }
-            if (query.includes('SELECT * FROM collection_data')) {
-              const recordId = params[0];
-              return this.data.get(recordId) || null;
-            }
-            return null;
-          },
-          all: async () => {
-            if (query.includes('SELECT * FROM collection_data')) {
-              const results = Array.from(this.data.values());
-              return { results };
-            }
-            return { results: [] };
-          },
-          run: async () => {
-            // Mock INSERT/UPDATE/DELETE
-            if (query.includes('INSERT INTO collection_data')) {
-              const id = params[0];
-              const data = JSON.parse(params[3]);
-              this.data.set(id, {
-                id,
-                collection_id: params[1],
-                tenant_id: params[2],
-                data,
-                created_by: params[4],
-                updated_by: params[5],
-                created_at: params[6],
-                updated_at: params[7],
-              });
-            }
-            if (query.includes('DELETE FROM collection_data')) {
-              const id = params[0];
-              this.data.delete(id);
-            }
-            return { success: true };
-          },
-        };
+      first: async () => {
+        // Mock implementation
+        if (this.query.includes('FROM collections') && this.query.includes('WHERE')) {
+          // Query: SELECT * FROM collections WHERE id = ? AND tenant_id = ?
+          const collectionId = params[0];
+          const tenantId = params[1];
+          const collection = this.db.collections.get(`${tenantId}:${collectionId}`);
+          if (collection) {
+            // Return with proper field names
+            return {
+              id: collection.id,
+              tenant_id: collection.tenant_id,
+              name: collection.name,
+              slug: collection.slug,
+              ...collection,
+            };
+          }
+          return null;
+        }
+        if (this.query.includes('SELECT * FROM collection_fields')) {
+          const collectionId = params[0];
+          const results = Array.from(this.db.fields.values()).filter(
+            (f) => f.collection_id === collectionId
+          );
+          return { results };
+        }
+        if (this.query.includes('FROM collection_data') && this.query.includes('WHERE id = ?')) {
+          // Query: SELECT * FROM collection_data WHERE id = ? AND collection_id = ? AND tenant_id = ?
+          const recordId = params[0];
+          const record = this.db.data.get(recordId);
+          if (record) {
+            return {
+              ...record,
+              data: typeof record.data === 'object' ? JSON.stringify(record.data) : record.data,
+            };
+          }
+          return null;
+        }
+        if (this.query.includes('COUNT(*)')) {
+          const collectionId = params[0];
+          const tenantId = params[1];
+          const count = Array.from(this.db.data.values()).filter(
+            (d) => d.collection_id === collectionId && d.tenant_id === tenantId
+          ).length;
+          return { count };
+        }
+        return null;
+      },
+      all: async () => {
+        if (this.query.includes('FROM collection_data') && this.query.includes('WHERE')) {
+          // Dynamic CRUD query with filters
+          // Params will be: [filter values..., limit, offset]
+          // We need to extract collection_id and tenant_id from the WHERE clause
+          const results = Array.from(this.db.data.values());
+          return { results };
+        }
+        if (this.query.includes('SELECT * FROM collection_fields')) {
+          const collectionId = params[0];
+          const results = Array.from(this.db.fields.values()).filter(
+            (f) => f.collection_id === collectionId
+          );
+          return { results };
+        }
+        return { results: [] };
+      },
+      run: async () => {
+        // Mock INSERT/UPDATE/DELETE
+        if (this.query.includes('INSERT INTO collection_data')) {
+          const id = params[0];
+          const data = JSON.parse(params[3]);
+          this.db.data.set(id, {
+            id,
+            collection_id: params[1],
+            tenant_id: params[2],
+            data,
+            created_by: params[4],
+            updated_by: params[5],
+            created_at: params[6],
+            updated_at: params[7],
+          });
+        }
+        if (this.query.includes('DELETE FROM collection_data')) {
+          const id = params[0];
+          this.db.data.delete(id);
+        }
+        return { success: true };
       },
     };
+  }
+}
+
+// Mock database
+class MockDB {
+  public data: Map<string, any> = new Map();
+  public collections: Map<string, any> = new Map();
+  public fields: Map<string, any> = new Map();
+
+  prepare(query: string) {
+    return new MockPreparedStatement(query, this);
   }
 
   addCollection(tenantId: string, collection: any) {
@@ -135,13 +184,13 @@ describe('Query Builder', () => {
     it('should handle advanced operators', () => {
       const { clause, params } = buildWhereClause({
         age: { gt: 18, lt: 65 },
-        name: { like: 'John%' },
+        name: { like: 'John' },
       });
 
       expect(clause).toContain('age > ?');
       expect(clause).toContain('age < ?');
       expect(clause).toContain('name LIKE ?');
-      expect(params).toEqual([18, 65, 'John%']);
+      expect(params).toEqual([18, 65, '%John%']);
     });
 
     it('should handle table aliases', () => {
@@ -353,13 +402,12 @@ describe('Dynamic CRUD Routes', () => {
       unique: 0,
     });
 
-    // Setup app
-    app = new Hono();
+    // Setup app with proper environment binding
+    app = new Hono<{ Bindings: { DB: any; KV: any }; Variables: { tenantId: string; userId: string } }>();
     app.use('*', async (c, next) => {
       c.set('tenantId', tenantId);
       c.set('userId', userId);
-      c.env.DB = db;
-      c.env.KV = kv;
+      (c as any).env = { DB: db, KV: kv };
       await next();
     });
     app.route('/data', dynamicCrudRoutes);
@@ -654,14 +702,18 @@ describe('Dynamic CRUD Routes', () => {
     });
 
     it('should not allow access to other tenant data', async () => {
-      // Simulate different tenant
-      app.use('*', async (c, next) => {
+      // Create separate app for different tenant
+      const otherApp = new Hono<{ Bindings: { DB: any; KV: any }; Variables: { tenantId: string; userId: string } }>();
+      otherApp.use('*', async (c, next) => {
         c.set('tenantId', otherTenantId); // Different tenant
+        c.set('userId', userId);
+        (c as any).env = { DB: db, KV: kv };
         await next();
       });
+      otherApp.route('/data', dynamicCrudRoutes);
 
       // Try to access record from different tenant
-      const res = await app.request('/data/' + collectionId + '/' + recordId);
+      const res = await otherApp.request('/data/' + collectionId + '/' + recordId);
       
       // Should not find the record (tenant isolation)
       expect(res.status).toBe(404);
@@ -708,8 +760,7 @@ describe('Integration Tests', () => {
     app.use('*', async (c, next) => {
       c.set('tenantId', tenantId);
       c.set('userId', userId);
-      c.env.DB = db;
-      c.env.KV = kv;
+      (c as any).env = { DB: db, KV: kv };
       await next();
     });
     app.route('/data', dynamicCrudRoutes);

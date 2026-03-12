@@ -19,6 +19,10 @@ const updateApiKeySchema = z.object({
   expiresAt: z.string().optional(),
 });
 
+const validateApiKeySchema = z.object({
+  key: z.string().min(1, 'API key is required'),
+});
+
 // ==================== Helper Functions ====================
 
 /**
@@ -247,14 +251,10 @@ apiKeysRoutes.post('/:id/rotate', async (c) => {
 
 /**
  * POST /api-keys/validate
- * Validate an API key (for external use)
+ * Validate an API key (for external use) - does NOT update last_used_at
  */
-apiKeysRoutes.post('/validate', async (c) => {
-  const { key } = await c.req.json();
-
-  if (!key) {
-    throw errors.invalidInput({ key: 'API key is required' });
-  }
+apiKeysRoutes.post('/validate', zValidator('json', validateApiKeySchema), async (c) => {
+  const { key } = c.req.valid('json');
 
   const hashedKey = await hashApiKey(key);
   const keyRecord: any = await c.env.DB.prepare(`
@@ -263,23 +263,25 @@ apiKeysRoutes.post('/validate', async (c) => {
   `).bind(hashedKey).first();
 
   if (!keyRecord) {
-    throw errors.unauthorized('Invalid API key');
+    return c.json({
+      valid: false,
+      error: 'Invalid API key',
+    });
   }
 
   // Check expiration
   if (keyRecord.expires_at) {
     const expiresAt = new Date(keyRecord.expires_at);
     if (expiresAt < new Date()) {
-      throw errors.unauthorized('API key has expired');
+      return c.json({
+        valid: false,
+        error: 'API key has expired',
+        expired: true,
+      });
     }
   }
 
-  // Update last used timestamp
-  const now = new Date().toISOString();
-  await c.env.DB.prepare(`
-    UPDATE api_keys SET last_used_at = ? WHERE id = ?
-  `).bind(now, keyRecord.id).run();
-
+  // Note: This endpoint does NOT update last_used_at (non-consuming validation)
   return c.json({
     valid: true,
     keyId: keyRecord.id,
@@ -288,5 +290,72 @@ apiKeysRoutes.post('/validate', async (c) => {
     permissions: typeof keyRecord.permissions === 'string' 
       ? JSON.parse(keyRecord.permissions) 
       : keyRecord.permissions,
+    expiresAt: keyRecord.expires_at,
+    lastUsedAt: keyRecord.last_used_at,
+  });
+});
+
+/**
+ * GET /api-keys/:id/usage
+ * Get API key usage statistics
+ */
+apiKeysRoutes.get('/:id/usage', async (c) => {
+  const tenantId = c.get('tenantId');
+  const keyId = c.req.param('id');
+
+  // Verify the key belongs to the tenant
+  const keyRecord: any = await c.env.DB.prepare(`
+    SELECT id, name, created_at, last_used_at, expires_at 
+    FROM api_keys 
+    WHERE id = ? AND tenant_id = ?
+  `).bind(keyId, tenantId).first();
+
+  if (!keyRecord) {
+    throw errors.notFound('API key');
+  }
+
+  // Get usage statistics from audit_logs
+  const usageStats: any = await c.env.DB.prepare(`
+    SELECT 
+      COUNT(*) as total_requests,
+      COUNT(CASE WHEN action = 'read' THEN 1 END) as read_count,
+      COUNT(CASE WHEN action = 'write' THEN 1 END) as write_count,
+      COUNT(CASE WHEN action = 'delete' THEN 1 END) as delete_count,
+      DATE(MIN(created_at)) as first_used_date,
+      DATE(MAX(created_at)) as last_used_date
+    FROM audit_logs
+    WHERE tenant_id = ? AND resource_id = ?
+  `).bind(tenantId, keyId).first();
+
+  // Get recent usage (last 10 requests)
+  const recentUsage: any = await c.env.DB.prepare(`
+    SELECT action, resource, resource_id, created_at, ip_address
+    FROM audit_logs
+    WHERE tenant_id = ? AND resource_id = ?
+    ORDER BY created_at DESC
+    LIMIT 10
+  `).bind(tenantId, keyId).all();
+
+  return c.json({
+    keyId,
+    name: keyRecord.name,
+    createdAt: keyRecord.created_at,
+    lastUsedAt: keyRecord.last_used_at,
+    expiresAt: keyRecord.expires_at,
+    usage: {
+      totalRequests: usageStats?.total_requests || 0,
+      readCount: usageStats?.read_count || 0,
+      writeCount: usageStats?.write_count || 0,
+      deleteCount: usageStats?.delete_count || 0,
+      firstUsedDate: usageStats?.first_used_date,
+      lastUsedDate: usageStats?.last_used_date,
+    },
+    recentUsage: (recentUsage.results || []).map((r: any) => ({
+      action: r.action,
+      resource: r.resource,
+      resourceId: r.resource_id,
+      timestamp: r.created_at,
+      ipAddress: r.ip_address,
+    })),
   });
 });

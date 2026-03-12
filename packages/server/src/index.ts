@@ -6,6 +6,7 @@ import { prettyJSON } from 'hono/pretty-json';
 import { tenantMiddleware } from './middleware/tenant';
 import { tenantIsolationMiddleware } from './middleware/tenant-isolation';
 import { authMiddleware } from './middleware/auth';
+import { apiKeyAuthMiddleware } from './middleware/api-key-auth';
 import { errorHandler } from './utils/errors';
 import { healthRoutes } from './routes/health';
 import { authRoutes } from './routes/auth';
@@ -68,7 +69,7 @@ api.route('/auth', authRoutes);
 
 // Protected routes
 const protectedApi = new Hono<{ Bindings: Bindings; Variables: Variables }>();
-protectedApi.use('/*', authMiddleware);
+protectedApi.use('/*', apiKeyAuthMiddleware);
 protectedApi.use('/*', tenantMiddleware);
 protectedApi.use('/*', tenantIsolationMiddleware);
 

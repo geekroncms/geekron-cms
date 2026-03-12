@@ -1,0 +1,57 @@
+# Auto-label configuration
+# See: https://github.com/actions/labeler
+
+frontend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/frontend/**/*'
+          - 'src/components/**/*'
+          - 'src/views/**/*'
+          - 'src/styles/**/*'
+
+backend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/backend/**/*'
+          - 'src/api/**/*'
+          - 'src/controllers/**/*'
+          - 'src/models/**/*'
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.md'
+          - 'docs/**/*'
+          - 'README*'
+
+tests:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '**/*.test.js'
+          - '**/*.spec.js'
+          - '**/*.test.ts'
+          - 'tests/**/*'
+          - '__tests__/**/*'
+
+database:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'src/migrations/**/*'
+          - 'src/database/**/*'
+          - '**/*.sql'
+
+configuration:
+  - changed-files:
+      - any-glob-to-any-file:
+          - '.env*'
+          - 'config/**/*'
+          - '*.config.js'
+          - '*.config.ts'
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'package.json'
+          - 'package-lock.json'
+          - 'pnpm-lock.yaml'
+          - 'yarn.lock'

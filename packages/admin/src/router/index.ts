@@ -32,10 +32,22 @@ const routes = [
     meta: { requiresAuth: true, title: '用户管理', permission: 'admin' },
   },
   {
+    path: '/tenants',
+    name: 'Tenants',
+    component: () => import('../views/Tenants.vue'),
+    meta: { requiresAuth: true, title: '租户管理', permission: 'admin' },
+  },
+  {
     path: '/settings',
     name: 'Settings',
     component: () => import('../views/Settings.vue'),
     meta: { requiresAuth: true, title: '系统设置', permission: 'admin' },
+  },
+  {
+    path: '/api-keys',
+    name: 'ApiKeys',
+    component: () => import('../views/ApiKeys.vue'),
+    meta: { requiresAuth: true, title: 'API Key 管理', permission: 'admin' },
   },
   {
     path: '/:pathMatch(.*)*',

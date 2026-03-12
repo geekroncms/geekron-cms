@@ -29,10 +29,10 @@ export const tenants = sqliteTable('tenants', {
 }));
 
 // 用户表
+// 注意：用户不再直接关联租户，而是通过 tenant_members 表实现多对多关系
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
-  tenantId: text('tenant_id').notNull(),
-  email: text('email').notNull(),
+  email: text('email').notNull().unique(),
   password: text('password').notNull(),
   name: text('name').notNull(),
   role: text('role', { enum: ['owner', 'admin', 'editor', 'viewer'] }).default('viewer'),
@@ -40,11 +40,27 @@ export const users = sqliteTable('users', {
   createdAt: text('created_at').notNull(),
   updatedAt: text('updated_at'),
 }, (table) => ({
-  idxTenant: index('idx_users_tenant').on(table.tenantId),
   idxEmail: index('idx_users_email').on(table.email),
   idxStatus: index('idx_users_status').on(table.status),
   idxRole: index('idx_users_role').on(table.role),
-  uniqueTenantEmail: index('idx_users_tenant_email').on(table.tenantId, table.email),
+}));
+
+// 租户成员表（多对多关系：一个用户可以属于多个租户）
+export const tenantMembers = sqliteTable('tenant_members', {
+  id: text('id').primaryKey(),
+  tenantId: text('tenant_id').notNull(),
+  userId: text('user_id').notNull(),
+  role: text('role', { enum: ['owner', 'admin', 'editor', 'viewer'] }).default('viewer'),
+  permissions: text('permissions', { mode: 'json' }), // 自定义权限覆盖
+  invitedBy: text('invited_by'),
+  status: text('status', { enum: ['active', 'invited', 'suspended'] }).default('active'),
+  createdAt: text('created_at').notNull(),
+}, (table) => ({
+  idxTenant: index('idx_tenant_members_tenant').on(table.tenantId),
+  idxUser: index('idx_tenant_members_user').on(table.userId),
+  idxRole: index('idx_tenant_members_role').on(table.role),
+  idxStatus: index('idx_tenant_members_status').on(table.status),
+  uniqueTenantUser: index('idx_tenant_members_unique').on(table.tenantId, table.userId),
 }));
 
 // 集合（数据模型）表

@@ -4,9 +4,11 @@ import { logger } from 'hono/logger';
 import { prettyJSON } from 'hono/pretty-json';
 
 import { tenantMiddleware } from './middleware/tenant';
+import { tenantIsolationMiddleware } from './middleware/tenant-isolation';
 import { authMiddleware } from './middleware/auth';
 import { errorHandler } from './utils/errors';
 import { healthRoutes } from './routes/health';
+import { authRoutes } from './routes/auth';
 import { tenantRoutes } from './routes/tenants';
 import { userRoutes } from './routes/users';
 import { collectionRoutes } from './routes/collections';
@@ -27,7 +29,16 @@ type Bindings = {
 type Variables = {
   tenantId: string;
   userId: string;
+  email: string;
   role: string;
+  permissions: string[];
+  tenant: {
+    id: string;
+    name: string;
+    slug: string;
+    plan: string;
+  };
+  safeDB: any; // Tenant-safe database proxy
 };
 
 // Create application
@@ -52,16 +63,18 @@ app.route('/health', healthRoutes);
 // API routes
 const api = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
-// Auth routes (partial auth - login/register are public)
-api.route('/auth', userRoutes);
+// Auth routes (login/register are public, others require auth)
+api.route('/auth', authRoutes);
 
 // Protected routes
 const protectedApi = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 protectedApi.use('/*', authMiddleware);
 protectedApi.use('/*', tenantMiddleware);
+protectedApi.use('/*', tenantIsolationMiddleware);
 
 // Register protected routes
 protectedApi.route('/tenants', tenantRoutes);
+protectedApi.route('/users', userRoutes);
 protectedApi.route('/collections', collectionRoutes);
 protectedApi.route('/data', collectionDataRoutes);
 protectedApi.route('/files', fileRoutes);

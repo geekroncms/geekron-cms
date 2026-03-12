@@ -1,32 +1,18 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { zValidator } from '@hono/zod-validator';
-import { SignJWT } from 'jose';
 import { hashPassword, comparePassword } from '../utils/password';
-import { errors, ApiError } from '../utils/errors';
+import { errors } from '../utils/errors';
 
 export const userRoutes = new Hono();
 
 // ==================== Schema Definitions ====================
-
-const loginSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-});
-
-const registerSchema = z.object({
-  email: z.string().email('Invalid email format'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  name: z.string().min(1, 'Name is required').max(100),
-  tenantId: z.string().optional(),
-});
 
 const createUserSchema = z.object({
   email: z.string().email('Invalid email format'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   name: z.string().min(1, 'Name is required').max(100),
   role: z.enum(['owner', 'admin', 'editor', 'viewer']).default('viewer'),
-  status: z.enum(['active', 'inactive', 'banned']).default('active'),
 });
 
 const updateUserSchema = z.object({
@@ -36,141 +22,22 @@ const updateUserSchema = z.object({
   status: z.enum(['active', 'inactive', 'banned']).optional(),
 });
 
+const inviteUserSchema = z.object({
+  email: z.string().email('Invalid email format'),
+  role: z.enum(['owner', 'admin', 'editor', 'viewer']).default('viewer'),
+  permissions: z.array(z.string()).optional(),
+});
+
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(6, 'Current password is required'),
   newPassword: z.string().min(6, 'New password must be at least 6 characters'),
 });
 
-// ==================== Authentication Routes ====================
-
-/**
- * POST /auth/login
- * User login
- */
-userRoutes.post('/login', zValidator('json', loginSchema), async (c) => {
-  const { email, password } = c.req.valid('json');
-
-  const user: any = await c.env.DB.prepare(
-    'SELECT * FROM users WHERE email = ?'
-  ).bind(email).first();
-
-  if (!user) {
-    throw errors.unauthorized('Invalid credentials');
-  }
-
-  if (user.status !== 'active') {
-    throw errors.forbidden('Account is not active');
-  }
-
-  const isValid = await comparePassword(password, user.password);
-  if (!isValid) {
-    throw errors.unauthorized('Invalid credentials');
-  }
-
-  const jwtSecret = c.env.JWT_SECRET || 'dev-secret-key';
-  const token = await new SignJWT({ 
-    sub: user.id, 
-    email: user.email,
-    role: user.role 
-  })
-    .setProtectedHeader({ alg: 'HS256' })
-    .setExpirationTime('24h')
-    .sign(new TextEncoder().encode(jwtSecret));
-
-  return c.json({
-    token,
-    user: {
-      id: user.id,
-      email: user.email,
-      name: user.name,
-      role: user.role,
-    },
-  });
-});
-
-/**
- * POST /auth/register
- * User registration
- */
-userRoutes.post('/register', zValidator('json', registerSchema), async (c) => {
-  const { email, password, name, tenantId } = c.req.valid('json');
-
-  const existing: any = await c.env.DB.prepare(
-    'SELECT id FROM users WHERE email = ?'
-  ).bind(email).first();
-
-  if (existing) {
-    throw errors.conflict('Email already registered');
-  }
-
-  const userId = crypto.randomUUID();
-  const hashedPassword = await hashPassword(password);
-
-  await c.env.DB.prepare(`
-    INSERT INTO users (id, email, password, name, role, status, created_at)
-    VALUES (?, ?, ?, ?, 'viewer', 'active', datetime('now'))
-  `).bind(userId, email, hashedPassword, name).run();
-
-  return c.json({
-    id: userId,
-    email,
-    name,
-    message: 'User registered successfully',
-  }, 201);
-});
-
-/**
- * GET /auth/me
- * Get current user info
- */
-userRoutes.get('/me', async (c) => {
-  const userId = c.get('userId');
-  
-  const user: any = await c.env.DB.prepare(
-    'SELECT id, email, name, role, status, created_at, updated_at FROM users WHERE id = ?'
-  ).bind(userId).first();
-
-  if (!user) {
-    throw errors.notFound('User');
-  }
-
-  return c.json(user);
-});
-
-/**
- * POST /auth/change-password
- * Change current user password
- */
-userRoutes.post('/change-password', zValidator('json', changePasswordSchema), async (c) => {
-  const { currentPassword, newPassword } = c.req.valid('json');
-  const userId = c.get('userId');
-  
-  const user: any = await c.env.DB.prepare(
-    'SELECT password FROM users WHERE id = ?'
-  ).bind(userId).first();
-
-  if (!user) {
-    throw errors.notFound('User');
-  }
-
-  const isValid = await comparePassword(currentPassword, user.password);
-  if (!isValid) {
-    throw errors.unauthorized('Current password is incorrect');
-  }
-
-  const hashedPassword = await hashPassword(newPassword);
-  await c.env.DB.prepare(`
-    UPDATE users SET password = ?, updated_at = datetime('now') WHERE id = ?
-  `).bind(hashedPassword, userId).run();
-
-  return c.json({ message: 'Password changed successfully' });
-});
-
-// ==================== User Management Routes (Admin) ====================
+// ==================== User Management Routes (Tenant-scoped) ====================
 
 /**
  * GET /users
- * List all users (tenant-scoped)
+ * List all users in current tenant
  */
 userRoutes.get('/', async (c) => {
   const tenantId = c.get('tenantId');
@@ -179,15 +46,19 @@ userRoutes.get('/', async (c) => {
   const offset = (page - 1) * limit;
 
   const users: any = await c.env.DB.prepare(`
-    SELECT id, email, name, role, status, created_at, updated_at 
-    FROM users 
-    WHERE tenant_id = ? OR tenant_id IS NULL
-    ORDER BY created_at DESC
+    SELECT u.id, u.email, u.name, u.role, u.status, tm.role as tenant_role, 
+           u.created_at, u.updated_at
+    FROM users u
+    INNER JOIN tenant_members tm ON u.id = tm.user_id
+    WHERE tm.tenant_id = ?
+    ORDER BY u.created_at DESC
     LIMIT ? OFFSET ?
   `).bind(tenantId, limit, offset).all();
 
   const total: any = await c.env.DB.prepare(`
-    SELECT COUNT(*) as count FROM users WHERE tenant_id = ? OR tenant_id IS NULL
+    SELECT COUNT(*) as count FROM users u
+    INNER JOIN tenant_members tm ON u.id = tm.user_id
+    WHERE tm.tenant_id = ?
   `).bind(tenantId).first();
 
   return c.json({
@@ -203,15 +74,19 @@ userRoutes.get('/', async (c) => {
 
 /**
  * GET /users/:id
- * Get user by ID
+ * Get user by ID (within current tenant)
  */
 userRoutes.get('/:id', async (c) => {
   const userId = c.req.param('id');
+  const tenantId = c.get('tenantId');
   
   const user: any = await c.env.DB.prepare(`
-    SELECT id, email, name, role, status, tenant_id, created_at, updated_at 
-    FROM users WHERE id = ?
-  `).bind(userId).first();
+    SELECT u.id, u.email, u.name, u.status, u.created_at, u.updated_at,
+           tm.role as tenant_role, tm.permissions, tm.status as membership_status
+    FROM users u
+    INNER JOIN tenant_members tm ON u.id = tm.user_id
+    WHERE u.id = ? AND tm.tenant_id = ?
+  `).bind(userId, tenantId).first();
 
   if (!user) {
     throw errors.notFound('User');
@@ -222,13 +97,14 @@ userRoutes.get('/:id', async (c) => {
 
 /**
  * POST /users
- * Create a new user
+ * Create a new user and add to current tenant
  */
 userRoutes.post('/', zValidator('json', createUserSchema), async (c) => {
   const body = c.req.valid('json');
   const tenantId = c.get('tenantId');
+  const db = c.env.DB;
 
-  const existing: any = await c.env.DB.prepare(
+  const existing: any = await db.prepare(
     'SELECT id FROM users WHERE email = ?'
   ).bind(body.email).first();
 
@@ -238,28 +114,82 @@ userRoutes.post('/', zValidator('json', createUserSchema), async (c) => {
 
   const userId = crypto.randomUUID();
   const hashedPassword = await hashPassword(body.password);
+  const now = new Date().toISOString();
 
-  await c.env.DB.prepare(`
-    INSERT INTO users (id, tenant_id, email, password, name, role, status, created_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
-  `).bind(userId, tenantId, body.email, hashedPassword, body.name, body.role, body.status).run();
+  // Create user
+  await db.prepare(`
+    INSERT INTO users (id, email, password, name, role, status, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, 'active', ?, ?)
+  `).bind(userId, body.email, hashedPassword, body.name, body.role, now, now).run();
+
+  // Add user to tenant
+  await db.prepare(`
+    INSERT INTO tenant_members (id, tenant_id, user_id, role, permissions, created_at)
+    VALUES (?, ?, ?, ?, null, ?)
+  `).bind(crypto.randomUUID(), tenantId, userId, body.role, now).run();
 
   return c.json({
     id: userId,
     email: body.email,
     name: body.name,
     role: body.role,
-    status: body.status,
-    message: 'User created successfully',
+    message: 'User created and added to tenant successfully',
+  }, 201);
+});
+
+/**
+ * POST /users/invite
+ * Invite an existing user to current tenant
+ */
+userRoutes.post('/invite', zValidator('json', inviteUserSchema), async (c) => {
+  const { email, role, permissions } = c.req.valid('json');
+  const tenantId = c.get('tenantId');
+  const userId = c.get('userId');
+  const db = c.env.DB;
+
+  // Find existing user
+  const user: any = await db.prepare(
+    'SELECT id FROM users WHERE email = ?'
+  ).bind(email).first();
+
+  if (!user) {
+    throw errors.notFound('User not found. Please create the user first.');
+  }
+
+  // Check if already a member
+  const existing: any = await db.prepare(`
+    SELECT id FROM tenant_members WHERE user_id = ? AND tenant_id = ?
+  `).bind(user.id, tenantId).first();
+
+  if (existing) {
+    throw errors.conflict('User is already a member of this tenant');
+  }
+
+  const now = new Date().toISOString();
+  const memberId = crypto.randomUUID();
+
+  // Add user to tenant
+  await db.prepare(`
+    INSERT INTO tenant_members (id, tenant_id, user_id, role, permissions, invited_by, status, created_at)
+    VALUES (?, ?, ?, ?, ?, ?, 'active', ?)
+  `).bind(memberId, tenantId, user.id, role, JSON.stringify(permissions || []), userId, now).run();
+
+  return c.json({
+    message: 'User invited successfully',
+    userId: user.id,
+    email,
+    role,
   }, 201);
 });
 
 /**
  * PATCH /users/:id
- * Update user
+ * Update user (within current tenant)
  */
 userRoutes.patch('/:id', zValidator('json', updateUserSchema), async (c) => {
   const userId = c.req.param('id');
+  const currentUserId = c.get('userId');
+  const tenantId = c.get('tenantId');
   const body = c.req.valid('json');
 
   const existing: any = await c.env.DB.prepare(
@@ -281,10 +211,6 @@ userRoutes.patch('/:id', zValidator('json', updateUserSchema), async (c) => {
     updates.push('name = ?');
     values.push(body.name);
   }
-  if (body.role) {
-    updates.push('role = ?');
-    values.push(body.role);
-  }
   if (body.status) {
     updates.push('status = ?');
     values.push(body.status);
@@ -294,31 +220,108 @@ userRoutes.patch('/:id', zValidator('json', updateUserSchema), async (c) => {
     return c.json({ message: 'No updates provided' });
   }
 
-  updates.push('updated_at = datetime(\'now\')');
+  updates.push('updated_at = ?');
+  values.push(new Date().toISOString());
   values.push(userId);
 
   const query = `UPDATE users SET ${updates.join(', ')} WHERE id = ?`;
   await c.env.DB.prepare(query).bind(...values).run();
+
+  // Update tenant membership role if provided
+  if (body.role) {
+    await c.env.DB.prepare(`
+      UPDATE tenant_members SET role = ? WHERE user_id = ? AND tenant_id = ?
+    `).bind(body.role, userId, tenantId).run();
+  }
 
   return c.json({ message: 'User updated successfully' });
 });
 
 /**
  * DELETE /users/:id
- * Delete user
+ * Remove user from current tenant (soft delete - doesn't delete user account)
  */
 userRoutes.delete('/:id', async (c) => {
   const userId = c.req.param('id');
+  const tenantId = c.get('tenantId');
 
-  const existing: any = await c.env.DB.prepare(
-    'SELECT id FROM users WHERE id = ?'
-  ).bind(userId).first();
+  // Check if user exists in tenant
+  const existing: any = await c.env.DB.prepare(`
+    SELECT id FROM tenant_members WHERE user_id = ? AND tenant_id = ?
+  `).bind(userId, tenantId).first();
 
   if (!existing) {
+    throw errors.notFound('User is not a member of this tenant');
+  }
+
+  // Prevent deleting yourself
+  if (userId === c.get('userId')) {
+    throw errors.forbidden('Cannot remove yourself from the tenant');
+  }
+
+  // Remove from tenant (soft delete - just remove membership)
+  await c.env.DB.prepare(`
+    DELETE FROM tenant_members WHERE user_id = ? AND tenant_id = ?
+  `).bind(userId, tenantId).run();
+
+  return c.json({ message: 'User removed from tenant successfully' });
+});
+
+/**
+ * POST /users/:id/leave
+ * Remove current user from tenant
+ */
+userRoutes.post('/:id/leave', async (c) => {
+  const userId = c.req.param('id');
+  const currentUserId = c.get('userId');
+  const tenantId = c.get('tenantId');
+
+  if (userId !== currentUserId) {
+    throw errors.forbidden('Can only remove yourself');
+  }
+
+  // Check if user is the last owner
+  const owners: any = await c.env.DB.prepare(`
+    SELECT COUNT(*) as count FROM tenant_members 
+    WHERE tenant_id = ? AND role = 'owner' AND status = 'active'
+  `).bind(tenantId).first();
+
+  if (owners.count === 1) {
+    throw errors.forbidden('Cannot leave: you are the last owner. Transfer ownership first.');
+  }
+
+  await c.env.DB.prepare(`
+    DELETE FROM tenant_members WHERE user_id = ? AND tenant_id = ?
+  `).bind(userId, tenantId).run();
+
+  return c.json({ message: 'Successfully left the tenant' });
+});
+
+/**
+ * POST /users/change-password
+ * Change current user password
+ */
+userRoutes.post('/change-password', zValidator('json', changePasswordSchema), async (c) => {
+  const { currentPassword, newPassword } = c.req.valid('json');
+  const userId = c.get('userId');
+  
+  const user: any = await c.env.DB.prepare(
+    'SELECT password FROM users WHERE id = ?'
+  ).bind(userId).first();
+
+  if (!user) {
     throw errors.notFound('User');
   }
 
-  await c.env.DB.prepare('DELETE FROM users WHERE id = ?').bind(userId).run();
+  const isValid = await comparePassword(currentPassword, user.password);
+  if (!isValid) {
+    throw errors.unauthorized('Current password is incorrect');
+  }
 
-  return c.json({ message: 'User deleted successfully' });
+  const hashedPassword = await hashPassword(newPassword);
+  await c.env.DB.prepare(`
+    UPDATE users SET password = ?, updated_at = ? WHERE id = ?
+  `).bind(hashedPassword, new Date().toISOString(), userId).run();
+
+  return c.json({ message: 'Password changed successfully' });
 });

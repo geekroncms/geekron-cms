@@ -1,0 +1,58 @@
+# Geekron CMS 定时备份配置示例
+# 将此文件内容添加到 crontab: crontab -e
+
+# 环境变量配置
+SHELL=/bin/bash
+PATH=/usr/local/bin:/usr/bin:/bin
+MAILTO=""
+
+# ============================================
+# D1 数据库备份
+# ============================================
+# 每天凌晨 2 点备份 D1 数据库
+0 2 * * * /root/.openclaw/workspace/geekron-cms/scripts/backup-d1.sh >> /var/log/geekron/backup-d1.log 2>&1
+
+# 每周日凌晨 3 点执行完整导出（包含 schema）
+0 3 * * 0 /root/.openclaw/workspace/geekron-cms/scripts/backup-d1.sh --full >> /var/log/geekron/backup-d1-full.log 2>&1
+
+# ============================================
+# PostgreSQL 数据库备份
+# ============================================
+# 每天凌晨 2:30 备份 PostgreSQL 数据库
+30 2 * * * /root/.openclaw/workspace/geekron-cms/scripts/backup-postgres.sh >> /var/log/geekron/backup-postgres.log 2>&1
+
+# 每周日凌晨 3:30 执行完整备份（包含所有数据库）
+30 3 * * 0 PGPASSWORD=postgres /root/.openclaw/workspace/geekron-cms/scripts/backup-postgres.sh --all >> /var/log/geekron/backup-postgres-full.log 2>&1
+
+# ============================================
+# 数据同步任务
+# ============================================
+# 每小时执行一次增量同步（从 D1 到 PostgreSQL）
+0 * * * * curl -X POST http://localhost:3000/api/sync/start -H "Content-Type: application/json" -d '{"type":"incremental"}' >> /var/log/geekron/sync-incremental.log 2>&1
+
+# 每天凌晨 4 点执行全量同步
+0 4 * * * curl -X POST http://localhost:3000/api/sync/start -H "Content-Type: application/json" -d '{"type":"full"}' >> /var/log/geekron/sync-full.log 2>&1
+
+# ============================================
+# 备份清理任务
+# ============================================
+# 每周清理一次旧备份（保留 30 天）
+0 5 * * 0 find /root/.openclaw/workspace/geekron-cms/backups -name "*.sql.gz" -mtime +30 -delete
+
+# ============================================
+# 健康检查任务
+# ============================================
+# 每 30 分钟执行一次健康检查
+*/30 * * * * /root/.openclaw/workspace/geekron-cms/scripts/healthcheck.sh >> /var/log/geekron/healthcheck.log 2>&1
+
+# ============================================
+# 日志轮转配置（可选）
+# ============================================
+# 每天凌晨 5 点轮转日志
+0 5 * * * find /var/log/geekron -name "*.log" -size +100M -exec mv {} {}.1 \;
+
+# ============================================
+# 备份验证任务（可选）
+# ============================================
+# 每周六凌晨 5 点验证备份完整性
+0 5 * * 6 /root/.openclaw/workspace/geekron-cms/scripts/verify-backup.sh >> /var/log/geekron/verify-backup.log 2>&1

@@ -1,0 +1,39 @@
+# Docker Compose 覆盖配置示例
+# 复制为 docker-compose.override.yml 使用
+
+version: '3.8'
+
+services:
+  # PostgreSQL 数据库
+  postgres:
+    environment:
+      POSTGRES_DB: geekron_cms
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Redis 缓存
+  redis:
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # MinIO 对象存储 (S3 兼容)
+  minio:
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:

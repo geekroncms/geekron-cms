@@ -1,0 +1,129 @@
+version: '3.8'
+
+services:
+  # Supabase PostgreSQL (本地开发用)
+  postgres:
+    image: postgres:15-alpine
+    container_name: geekron-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: geekron_cms
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - geekron-network
+
+  # Redis (会话缓存)
+  redis:
+    image: redis:7-alpine
+    container_name: geekron-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - geekron-network
+
+  # MinIO (本地 S3 兼容存储，用于测试文件上传)
+  minio:
+    image: minio/minio:latest
+    container_name: geekron-minio
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - geekron-network
+
+  # Miniflare (Cloudflare D1 本地模拟器)
+  miniflare:
+    image: cloudflare/miniflare:latest
+    container_name: geekron-miniflare
+    ports:
+      - "8787:8787"
+    volumes:
+      - ./:/app
+      - miniflare_data:/data
+    working_dir: /app
+    environment:
+      - NODE_ENV=development
+      - D1_DATABASE_NAME=geekron_d1
+    command: >
+      sh -c "
+        echo 'Starting Miniflare D1 simulator...' &&
+        miniflare --d1 D1_DATABASE --port 8787 --watch
+      "
+    depends_on:
+      - postgres
+    networks:
+      - geekron-network
+
+  # 应用服务 (开发模式)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: geekron-app
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+      - PG_HOST=postgres
+      - PG_PORT=5432
+      - PG_DATABASE=geekron_cms
+      - PG_USER=postgres
+      - PG_PASSWORD=postgres
+      - REDIS_URL=redis://redis:6379
+      - MINIO_ENDPOINT=minio:9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - D1_DATABASE_ID=local-d1-db
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - geekron-network
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  miniflare_data:
+
+networks:
+  geekron-network:
+    driver: bridge

@@ -1,4 +1,4 @@
-import { defineConfig } from '@playwright/test';
+import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './e2e',
@@ -20,58 +20,27 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { 
-        ...defineConfig().use,
-        viewport: { width: 1920, height: 1080 },
-      },
+      use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'firefox',
-      use: { 
-        ...defineConfig().use,
-        viewport: { width: 1920, height: 1080 },
-      },
+      use: { ...devices['Desktop Firefox'] },
     },
     {
       name: 'webkit',
-      use: { 
-        ...defineConfig().use,
-        viewport: { width: 1920, height: 1080 },
-      },
+      use: { ...devices['Desktop Safari'] },
     },
-    // Mobile devices
     {
       name: 'Mobile Chrome',
-      use: { 
-        ...defineConfig().use,
-        viewport: { width: 393, height: 852 },
-        deviceScaleFactor: 3,
-        isMobile: true,
-      },
+      use: { ...devices['Pixel 5'] },
     },
     {
       name: 'Mobile Safari',
-      use: { 
-        ...defineConfig().use,
-        viewport: { width: 430, height: 932 },
-        deviceScaleFactor: 3,
-        isMobile: true,
-      },
+      use: { ...devices['iPhone 14 Pro'] },
     },
     {
       name: 'iPad',
-      use: { 
-        ...defineConfig().use,
-        viewport: { width: 1024, height: 1366 },
-        deviceScaleFactor: 2,
-        isMobile: true,
-      },
+      use: { ...devices['iPad Pro'] },
     },
   ],
-  webServer: {
-    command: 'bun run dev',
-    url: 'http://localhost:5173',
-    timeout: 120 * 1000,
-    reuseExistingServer: !process.env.CI,
-  },
 });

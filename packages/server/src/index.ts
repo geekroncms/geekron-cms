@@ -1,7 +1,10 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { logger } from 'hono/logger';
+import { logger as honoLogger } from 'hono/logger';
 import { prettyJSON } from 'hono/pretty-json';
+import { createLogger } from './utils/logger';
+
+const logger = createLogger('Server');
 
 import { tenantMiddleware } from './middleware/tenant';
 import { tenantIsolationMiddleware } from './middleware/tenant-isolation';
@@ -9,7 +12,7 @@ import { authMiddleware } from './middleware/auth';
 import { apiKeyAuthMiddleware } from './middleware/api-key-auth';
 import { rateLimitMiddleware } from './middleware/rate-limit';
 import { quotaCheckMiddleware } from './middleware/quota-check';
-import { errorHandler } from './utils/errors';
+import { ApiError } from './utils/errors';
 import { healthRoutes } from './routes/health';
 import { authRoutes } from './routes/auth';
 import { tenantRoutes } from './routes/tenants';
@@ -19,6 +22,8 @@ import { collectionDataRoutes } from './routes/collection-data';
 import { fileRoutes } from './routes/files';
 import { apiKeysRoutes } from './routes/api-keys';
 import { quotaRoutes } from './routes/quotas';
+import { metadataRoutes } from './routes/metadata';
+import { dynamicCrudRoutes } from './services/dynamic-crud';
 
 // Type definitions
 type Bindings = {
@@ -50,11 +55,8 @@ type Variables = {
 // Create application
 const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
-// Global error handler
-app.use('*', errorHandler());
-
 // Middleware
-app.use('*', logger());
+app.use('*', honoLogger());
 app.use('*', prettyJSON());
 app.use('*', cors({
   origin: ['http://localhost:5173', 'https://cms.geekron-cms.com'],
@@ -85,9 +87,11 @@ protectedApi.route('/tenants', tenantRoutes);
 protectedApi.route('/users', userRoutes);
 protectedApi.route('/collections', collectionRoutes);
 protectedApi.route('/data', collectionDataRoutes);
+protectedApi.route('/dynamic-data', dynamicCrudRoutes); // Phase 3: Dynamic CRUD
 protectedApi.route('/files', fileRoutes);
 protectedApi.route('/api-keys', apiKeysRoutes);
 protectedApi.route('/quotas', quotaRoutes);
+protectedApi.route('/metadata', metadataRoutes); // Phase 3: Metadata Management
 
 // Mount protected routes
 api.route('/', protectedApi);
@@ -104,9 +108,27 @@ app.notFound((c) => {
   }, 404);
 });
 
-// Global error handler (fallback)
+// Global error handler - handles ApiError and other errors
 app.onError((err, c) => {
-  console.error('Unhandled error:', err);
+  if (err instanceof ApiError) {
+    return c.json({
+      error: err.code,
+      message: err.message,
+      details: err.details,
+    }, err.statusCode);
+  }
+  
+  // Zod validation errors
+  if (err?.name === 'ZodError') {
+    return c.json({
+      error: 'VALIDATION_ERROR',
+      message: 'Validation failed',
+      details: err?.errors,
+    }, 400);
+  }
+  
+  // Log and return internal error
+  logger.error('Unhandled error', err);
   return c.json({ 
     error: 'INTERNAL_ERROR', 
     message: 'Internal server error' 

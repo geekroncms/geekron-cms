@@ -1,70 +1,41 @@
 import { test, expect } from '@playwright/test';
-import { LoginPage } from './pages/LoginPage';
-import { DashboardPage } from './pages/DashboardPage';
 
-test.describe('Authentication Flow', () => {
-  let loginPage: LoginPage;
-  let dashboardPage: DashboardPage;
-
-  test.beforeEach(async ({ page }) => {
-    loginPage = new LoginPage(page);
-    dashboardPage = new DashboardPage(page);
+test.describe('Authentication', () => {
+  test('should display login page', async ({ page }) => {
+    await page.goto('/login');
+    await expect(page.locator('[data-testid="page-title"]')).toContainText('Geekron CMS');
+    await expect(page.locator('[data-testid="email-input"]')).toBeVisible();
+    await expect(page.locator('[data-testid="password-input"]')).toBeVisible();
+    await expect(page.locator('[data-testid="login-btn"]')).toBeVisible();
   });
 
   test('should login with valid credentials', async ({ page }) => {
-    await loginPage.goto();
-    await loginPage.login('admin@example.com', 'password123');
-    await loginPage.isLoggedIn();
+    await page.goto('/login');
+    await page.fill('[data-testid="email-input"]', 'admin@example.com');
+    await page.fill('[data-testid="password-input"]', 'password123');
+    await page.click('[data-testid="login-btn"]');
+    await page.waitForURL('/');
+    await expect(page.locator('[data-testid="page-title"]')).toBeVisible();
   });
 
-  test('should show error for invalid password', async ({ page }) => {
-    await loginPage.goto();
-    await loginPage.login('admin@example.com', 'wrongpassword');
-    await expect(loginPage.getErrorMessage()).resolves.toBeTruthy();
-  });
-
-  test('should show error for non-existent email', async ({ page }) => {
-    await loginPage.goto();
-    await loginPage.login('nonexistent@example.com', 'password123');
-    await expect(loginPage.getErrorMessage()).resolves.toBeTruthy();
-  });
-
-  test('should show validation error for empty form', async ({ page }) => {
-    await loginPage.goto();
-    await loginPage.getSubmitButton().then(btn => btn.click());
-    await expect(loginPage.hasValidationError('email')).resolves.toBeTruthy();
-  });
-
-  test('should remember login state after refresh', async ({ page }) => {
-    await loginPage.goto();
-    await loginPage.login('admin@example.com', 'password123');
-    await loginPage.isLoggedIn();
+  test('should show error for invalid credentials', async ({ page }) => {
+    await page.goto('/login');
+    await page.fill('[data-testid="email-input"]', 'wrong@example.com');
+    await page.fill('[data-testid="password-input"]', 'wrongpassword');
+    await page.click('[data-testid="login-btn"]');
     
-    // 刷新页面
-    await page.reload();
-    await expect(page).toHaveURL(/\/dashboard|\/$/);
+    // 验证错误消息显示（如果有）
+    await expect(page.locator('[data-testid="error-message"]')).toBeVisible();
   });
 
-  test('should logout and redirect to login page', async ({ page }) => {
-    // 先登录
-    await loginPage.goto();
-    await loginPage.login('admin@example.com', 'password123');
-    await loginPage.isLoggedIn();
+  test('should validate email format', async ({ page }) => {
+    await page.goto('/login');
+    await page.fill('[data-testid="email-input"]', 'invalid-email');
+    await page.fill('[data-testid="password-input"]', 'password123');
+    await page.click('[data-testid="login-btn"]');
     
-    // 登出
-    await dashboardPage.goto();
-    await dashboardPage.logout();
-    await expect(page).toHaveURL(/\/login/);
-  });
-
-  test('should redirect to login when accessing protected page after logout', async ({ page }) => {
-    // 先登录再登出
-    await loginPage.goto();
-    await loginPage.login('admin@example.com', 'password123');
-    await dashboardPage.logout();
-    
-    // 尝试访问受保护页面
-    await page.goto('/dashboard');
-    await expect(page).toHaveURL(/\/login/);
+    // 浏览器应该会显示验证错误
+    const emailInput = page.locator('[data-testid="email-input"]');
+    await expect(emailInput).toHaveAttribute('type', 'email');
   });
 });

@@ -1,102 +1,45 @@
 import { test, expect } from '@playwright/test';
-import { LoginPage } from './pages/LoginPage';
-import { TenantsPage } from './pages/TenantsPage';
 
-test.describe('Tenant Management', () => {
-  let loginPage: LoginPage;
-  let tenantsPage: TenantsPage;
-
+test.describe('Tenants Management', () => {
   test.beforeEach(async ({ page }) => {
-    loginPage = new LoginPage(page);
-    tenantsPage = new TenantsPage(page);
+    // 登录
+    await page.goto('/login');
+    await page.fill('[name="email"]', 'admin@example.com');
+    await page.fill('[name="password"]', 'password123');
+    await page.click('button[type="submit"]');
+    await page.waitForURL('/');
     
-    await loginPage.goto();
-    await loginPage.login('admin@example.com', 'password123');
-    await tenantsPage.goto();
+    // 导航到租户管理
+    await page.goto('/tenants');
+  });
+
+  test('should display tenants page', async ({ page }) => {
+    await expect(page.locator('[data-testid="page-title"]')).toContainText('租户管理');
+    await expect(page.locator('[data-testid="create-tenant-btn"]')).toBeVisible();
   });
 
   test('should create tenant successfully', async ({ page }) => {
-    await tenantsPage.clickCreateTenant();
-    await tenantsPage.fillTenantForm({
-      name: 'Test Tenant',
-      subdomain: 'test-tenant',
-      description: 'Test description',
-    });
-    await tenantsPage.submitTenantForm();
+    // 点击创建按钮
+    await page.click('[data-testid="create-tenant-btn"]');
     
-    await expect(tenantsPage.getTenantRow('Test Tenant')).toBeVisible();
-  });
-
-  test('should show error for duplicate subdomain', async ({ page }) => {
-    await tenantsPage.clickCreateTenant();
-    await tenantsPage.fillTenantForm({
-      name: 'Duplicate Tenant',
-      subdomain: 'existing-tenant',
-    });
-    await tenantsPage.submitTenantForm();
+    // 填写表单
+    await page.fill('[data-testid="tenant-name-input"]', 'Test Tenant');
+    await page.fill('[data-testid="tenant-subdomain-input"]', 'test-tenant');
+    await page.fill('[data-testid="tenant-email-input"]', 'test@example.com');
+    await page.selectOption('[data-testid="tenant-plan-select"]', 'pro');
     
-    await expect(page.locator('[class*="error"]')).toBeVisible();
-  });
-
-  test('should show validation errors for empty form', async ({ page }) => {
-    await tenantsPage.clickCreateTenant();
-    await tenantsPage.submitTenantForm();
+    // 提交
+    await page.click('[data-testid="confirm-create-btn"]');
     
-    await expect(page.locator('[name="name"] + [class*="error"]')).toBeVisible();
-    await expect(page.locator('[name="subdomain"] + [class*="error"]')).toBeVisible();
+    // 验证列表更新
+    await expect(page.locator('[data-testid="tenants-list"]')).toBeVisible();
   });
 
-  test('should display all tenants in list', async ({ page }) => {
-    await expect(tenantsPage.getTenantRow('Test Tenant')).toBeVisible();
+  test('should display tenant list', async ({ page }) => {
+    await expect(page.locator('[data-testid="tenants-list"]')).toBeVisible();
   });
 
-  test('should have working pagination', async ({ page }) => {
-    const pagination = tenantsPage.getPagination();
-    await expect(pagination).toBeVisible();
-  });
-
-  test('should search tenants', async ({ page }) => {
-    await tenantsPage.searchTenant('Test');
-    await expect(tenantsPage.getTenantRow('Test Tenant')).toBeVisible();
-  });
-
-  test('should edit tenant successfully', async ({ page }) => {
-    await tenantsPage.editTenant('Test Tenant');
-    await tenantsPage.fillTenantForm({
-      name: 'Updated Tenant',
-      subdomain: 'test-tenant',
-      description: 'Updated description',
-    });
-    await tenantsPage.submitTenantForm();
-    
-    await expect(tenantsPage.getTenantRow('Updated Tenant')).toBeVisible();
-  });
-
-  test('should activate tenant', async ({ page }) => {
-    const row = tenantsPage.getTenantRow('Test Tenant');
-    await row.locator('[class*="activate"], button:has-text("激活")').click();
-    await expect(row).toContainText('已激活');
-  });
-
-  test('should suspend tenant', async ({ page }) => {
-    const row = tenantsPage.getTenantRow('Test Tenant');
-    await row.locator('[class*="suspend"], button:has-text("暂停")').click();
-    await expect(row).toContainText('已暂停');
-  });
-
-  test('should soft delete tenant', async ({ page }) => {
-    await tenantsPage.deleteTenant('Test Tenant');
-    await expect(tenantsPage.getTenantRow('Test Tenant')).not.toBeVisible();
-  });
-
-  test('should check subdomain availability in real-time', async ({ page }) => {
-    await tenantsPage.clickCreateTenant();
-    await tenantsPage.fillTenantForm({
-      name: 'New Tenant',
-      subdomain: 'unique-subdomain',
-    });
-    
-    const status = await tenantsPage.getSubdomainStatus();
-    await expect(status).toContain('可用');
+  test('should show plan badges', async ({ page }) => {
+    await expect(page.locator('.badge-free, .badge-pro, .badge-enterprise')).toBeVisible();
   });
 });

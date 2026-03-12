@@ -1,0 +1,71 @@
+name: Auto Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - develop
+      - main
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run ESLint
+        run: npm run lint -- --max-warnings=0
+      
+      - name: Run tests
+        run: npm test -- --coverage
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage/lcov.info
+          fail_ci_if_error: false
+      
+      - name: Security audit
+        run: npm audit --audit-level=moderate
+      
+      - name: Super-Linter
+        uses: github/super-linter/slim@v5
+        env:
+          DEFAULT_BRANCH: develop
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VALIDATE_ALL_CODEBASE: false
+          VALIDATE_JAVASCRIPT_ES: true
+          VALIDATE_TYPESCRIPT_ES: true
+          VALIDATE_JSON: true
+          VALIDATE_YAML: true
+          VALIDATE_MARKDOWN: true
+          VALIDATE_GITHUB_ACTIONS: true
+      
+      - name: Auto review comment
+        uses: actions/github-script@v6
+        if: always()
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const success = ${{ job.status }} === 'success';
+            const comment = success 
+              ? '✅ Code review passed! All checks successful.' 
+              : '❌ Code review failed. Please fix the issues above.';
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

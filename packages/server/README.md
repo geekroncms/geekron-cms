@@ -1,39 +1,46 @@
 # Geekron CMS Server
 
-Backend server for Geekron CMS built with Hono, Cloudflare Workers, D1 Database, and R2 Storage.
+Backend server for Geekron CMS built with Hono, Cloudflare Workers, D1 Database,
+and R2 Storage.
 
 ## Features
 
 ✅ **Authentication & Authorization**
+
 - JWT-based authentication
 - Password hashing with bcryptjs
 - Role-based access control (owner, admin, editor, viewer)
 - API key management
 
 ✅ **Multi-tenancy**
+
 - Tenant isolation at database level
 - Tenant-scoped resources
 - Automatic tenant context injection
 
 ✅ **Dynamic Data Models**
+
 - Create custom collections (data models)
 - Define custom fields per collection
 - Full CRUD operations on collection data
 - JSON-based flexible schema
 
 ✅ **File Management**
+
 - R2 storage integration
 - Multipart upload support for large files
 - File type validation
 - Automatic public URL generation
 
 ✅ **API Keys**
+
 - Generate secure API keys
 - Permission-based access
 - Expiration support
 - Key rotation
 
 ✅ **Developer Experience**
+
 - TypeScript support
 - Zod validation
 - Comprehensive error handling
@@ -162,18 +169,18 @@ See [API.md](./API.md) for complete API documentation.
 
 ### Quick Reference
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/v1/auth/register` | Register user |
-| POST | `/api/v1/auth/login` | Login |
-| GET | `/api/v1/auth/me` | Get current user |
-| GET | `/api/v1/users` | List users |
-| POST | `/api/v1/users` | Create user |
-| POST | `/api/v1/collections` | Create collection |
-| GET | `/api/v1/data/:collectionId` | List data |
-| POST | `/api/v1/data` | Create data entry |
-| POST | `/api/v1/files/upload` | Upload file |
-| POST | `/api/v1/api-keys` | Create API key |
+| Method | Endpoint                     | Description       |
+| ------ | ---------------------------- | ----------------- |
+| POST   | `/api/v1/auth/register`      | Register user     |
+| POST   | `/api/v1/auth/login`         | Login             |
+| GET    | `/api/v1/auth/me`            | Get current user  |
+| GET    | `/api/v1/users`              | List users        |
+| POST   | `/api/v1/users`              | Create user       |
+| POST   | `/api/v1/collections`        | Create collection |
+| GET    | `/api/v1/data/:collectionId` | List data         |
+| POST   | `/api/v1/data`               | Create data entry |
+| POST   | `/api/v1/files/upload`       | Upload file       |
+| POST   | `/api/v1/api-keys`           | Create API key    |
 
 ## Authentication
 
@@ -212,6 +219,7 @@ All errors follow a consistent format:
 ```
 
 Common error codes:
+
 - `UNAUTHORIZED` (401)
 - `FORBIDDEN` (403)
 - `NOT_FOUND` (404)
@@ -291,5 +299,6 @@ MIT
 ## Support
 
 For issues and questions:
+
 - GitHub Issues: https://github.com/GeekronCMS/geekron-cms/issues
 - Documentation: https://docs.geekron-cms.com

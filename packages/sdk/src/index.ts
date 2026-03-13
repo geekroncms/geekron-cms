@@ -1,20 +1,27 @@
 /**
  * Geekron CMS Client SDK
- * 
+ *
  * @example
  * ```typescript
  * import { GeekronCMS } from '@geekron-cms/sdk'
- * 
+ *
  * const client = new GeekronCMS({
  *   baseURL: 'https://api.geekron-cms.com',
  *   token: 'your_jwt_token'
  * })
- * 
+ *
  * const tenants = await client.tenants.list()
  * ```
  */
 
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios'
+import axios, { AxiosInstance, InternalAxiosRequestConfig } from 'axios'
+
+// Extend Axios request config with custom token property
+declare module 'axios' {
+  interface InternalAxiosRequestConfig {
+    token?: string
+  }
+}
 
 export interface GeekronCMSConfig {
   baseURL: string
@@ -74,8 +81,8 @@ export class GeekronCMS {
       baseURL: config.baseURL,
       timeout: config.timeout || 30000,
       headers: {
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+      },
     })
 
     // 添加认证拦截器
@@ -98,7 +105,7 @@ export class GeekronCMS {
    */
   setToken(token: string) {
     this.client.defaults.headers.common.Authorization = `Bearer ${token}`
-    
+
     // 更新所有 API 模块的 token
     this.tenants.setToken(token)
     this.users.setToken(token)
@@ -108,7 +115,10 @@ export class GeekronCMS {
 }
 
 class TenantsAPI {
-  constructor(private client: AxiosInstance, private token?: string) {}
+  constructor(
+    private client: AxiosInstance,
+    private token?: string,
+  ) {}
 
   setToken(token: string) {
     this.token = token
@@ -136,7 +146,7 @@ class TenantsAPI {
 
   async update(
     id: string,
-    data: { name?: string; plan?: string; settings?: Record<string, any> }
+    data: { name?: string; plan?: string; settings?: Record<string, any> },
   ): Promise<{ success: boolean; data: Tenant }> {
     const response = await this.client.put(`/api/v1/tenants/${id}`, data)
     return response.data
@@ -148,7 +158,10 @@ class TenantsAPI {
 }
 
 class UsersAPI {
-  constructor(private client: AxiosInstance, private token?: string) {}
+  constructor(
+    private client: AxiosInstance,
+    private token?: string,
+  ) {}
 
   setToken(token: string) {
     this.token = token
@@ -175,7 +188,7 @@ class UsersAPI {
 
   async update(
     id: string,
-    data: { name?: string; role?: string; status?: string }
+    data: { name?: string; role?: string; status?: string },
   ): Promise<{ success: boolean; data: User }> {
     const response = await this.client.put(`/api/v1/users/${id}`, data)
     return response.data
@@ -187,13 +200,18 @@ class UsersAPI {
 }
 
 class ContentAPI {
-  constructor(private client: AxiosInstance, private token?: string) {}
+  constructor(
+    private client: AxiosInstance,
+    private token?: string,
+  ) {}
 
   setToken(token: string) {
     this.token = token
   }
 
-  async list(params?: PaginationParams & { model?: string; status?: string }): Promise<PaginatedResponse<any>> {
+  async list(
+    params?: PaginationParams & { model?: string; status?: string },
+  ): Promise<PaginatedResponse<any>> {
     const response = await this.client.get('/api/v1/content', { params })
     return response.data
   }
@@ -235,7 +253,10 @@ class ContentAPI {
 }
 
 class FilesAPI {
-  constructor(private client: AxiosInstance, private token?: string) {}
+  constructor(
+    private client: AxiosInstance,
+    private token?: string,
+  ) {}
 
   setToken(token: string) {
     this.token = token
@@ -249,11 +270,11 @@ class FilesAPI {
   async upload(file: File | Blob): Promise<{ success: boolean; data: any }> {
     const formData = new FormData()
     formData.append('file', file)
-    
+
     const response = await this.client.post('/api/v1/files/upload', formData, {
       headers: {
-        'Content-Type': 'multipart/form-data'
-      }
+        'Content-Type': 'multipart/form-data',
+      },
     })
     return response.data
   }

@@ -1,75 +1,119 @@
 <template>
   <div class="table-container">
-    <div v-if="loading" class="table-loading">
-      <div class="spinner"></div>
+    <div
+      v-if="loading"
+      class="table-loading"
+    >
+      <div class="spinner" />
       <span>加载中...</span>
     </div>
-    
-    <table v-else-if="data.length > 0" class="table">
+
+    <table
+      v-else-if="data.length > 0"
+      class="table"
+    >
       <thead>
         <tr>
-          <th v-if="selectable" class="select-col">
-            <input 
-              type="checkbox" 
+          <th
+            v-if="selectable"
+            class="select-col"
+          >
+            <input
+              type="checkbox"
               :checked="allSelected"
               @change="toggleSelectAll"
-            />
+            >
           </th>
-          <th v-for="column in columns" :key="column.key" :style="{ width: column.width }">
+          <th
+            v-for="column in columns"
+            :key="column.key"
+            :style="{ width: column.width }"
+          >
             <div class="th-content">
               {{ column.title }}
-              <span v-if="column.sortable" class="sort-icon" @click="handleSort(column.key)">
+              <span
+                v-if="column.sortable"
+                class="sort-icon"
+                @click="handleSort(column.key)"
+              >
                 {{ getSortIcon(column.key) }}
               </span>
             </div>
           </th>
-          <th v-if="$slots.actions" class="actions-col">操作</th>
+          <th
+            v-if="$slots.actions"
+            class="actions-col"
+          >
+            操作
+          </th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="row in data" :key="getRowKey(row)">
-          <td v-if="selectable" class="select-col">
-            <input 
-              type="checkbox" 
+        <tr
+          v-for="row in data"
+          :key="getRowKey(row)"
+        >
+          <td
+            v-if="selectable"
+            class="select-col"
+          >
+            <input
+              type="checkbox"
               :checked="isSelected(row)"
               @change="toggleSelect(row)"
-            />
+            >
           </td>
-          <td v-for="column in columns" :key="column.key">
-            <slot :name="`cell-${column.key}`" :row="row" :value="row[column.key]">
+          <td
+            v-for="column in columns"
+            :key="column.key"
+          >
+            <slot
+              :name="`cell-${column.key}`"
+              :row="row"
+              :value="row[column.key]"
+            >
               {{ renderCell(row, column) }}
             </slot>
           </td>
           <td v-if="$slots.actions">
-            <slot name="actions" :row="row"></slot>
+            <slot
+              name="actions"
+              :row="row"
+            />
           </td>
         </tr>
       </tbody>
     </table>
-    
-    <div v-else class="table-empty">
+
+    <div
+      v-else
+      class="table-empty"
+    >
       <slot name="empty">
         <p>暂无数据</p>
       </slot>
     </div>
-    
+
     <!-- 分页 -->
-    <div v-if="pagination && data.length > 0" class="table-pagination">
+    <div
+      v-if="pagination && data.length > 0"
+      class="table-pagination"
+    >
       <span class="pagination-info">
         共 {{ pagination.total }} 条，第 {{ pagination.current }} / {{ pagination.pages }} 页
       </span>
       <div class="pagination-buttons">
-        <button 
-          @click="$emit('page-change', pagination.current - 1)"
+        <button
           :disabled="pagination.current <= 1"
           class="btn-page"
+          @click="$emit('page-change', pagination.current - 1)"
         >
           上一页
         </button>
-        <button 
-          @click="$emit('page-change', pagination.current + 1)"
+        <button
           :disabled="pagination.current >= pagination.pages"
           class="btn-page"
+          @click="$emit('page-change', pagination.current + 1)"
         >
           下一页
         </button>
@@ -79,87 +123,92 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, ref } from 'vue'
 
 interface Column {
-  key: string;
-  title: string;
-  width?: string;
-  sortable?: boolean;
-  render?: (value: any, row: any) => string;
+  key: string
+  title: string
+  width?: string
+  sortable?: boolean
+  render?: (value: unknown, row: unknown) => string
 }
 
 interface Pagination {
-  total: number;
-  current: number;
-  pages: number;
+  total: number
+  current: number
+  pages: number
+}
+
+interface TableRow {
+  id: string | number
+  [key: string]: unknown
 }
 
 const props = defineProps<{
-  data: any[];
-  columns: Column[];
-  rowKey?: string;
-  selectable?: boolean;
-  loading?: boolean;
-  pagination?: Pagination;
-}>();
+  data: TableRow[]
+  columns: Column[]
+  rowKey?: string
+  selectable?: boolean
+  loading?: boolean
+  pagination?: Pagination
+}>()
 
 const emit = defineEmits<{
-  'page-change': [page: number];
-  'sort-change': [key: string, order: 'asc' | 'desc'];
-  'selection-change': [selectedRows: any[]];
-}>();
+  'page-change': [page: number]
+  'sort-change': [key: string, order: 'asc' | 'desc']
+  'selection-change': [selectedRows: TableRow[]]
+}>()
 
-const selectedRows = ref<any[]>([]);
-const sortState = ref<{ key: string; order: 'asc' | 'desc' } | null>(null);
+const selectedRows = ref<TableRow[]>([])
+const sortState = ref<{ key: string; order: 'asc' | 'desc' } | null>(null)
 
 const allSelected = computed(() => {
-  return props.data.length > 0 && selectedRows.value.length === props.data.length;
-});
+  return props.data.length > 0 && selectedRows.value.length === props.data.length
+})
 
-function getRowKey(row: any) {
-  return props.rowKey ? row[props.rowKey] : row.id;
+function getRowKey(row: TableRow) {
+  return props.rowKey ? row[props.rowKey] : row.id
 }
 
-function renderCell(row: any, column: Column) {
+function renderCell(row: TableRow, column: Column) {
   if (column.render) {
-    return column.render(row[column.key], row);
+    return column.render(row[column.key], row)
   }
-  return row[column.key];
+  return row[column.key]
 }
 
 function getSortIcon(key: string) {
-  if (!sortState.value || sortState.value.key !== key) return '↕';
-  return sortState.value.order === 'asc' ? '↑' : '↓';
+  if (!sortState.value || sortState.value.key !== key) {return '↕'}
+  return sortState.value.order === 'asc' ? '↑' : '↓'
 }
 
 function handleSort(key: string) {
-  const order = sortState.value?.key === key && sortState.value.order === 'asc' ? 'desc' : 'asc';
-  sortState.value = { key, order };
-  emit('sort-change', key, order);
+  const order = sortState.value?.key === key && sortState.value.order === 'asc' ? 'desc' : 'asc'
+  sortState.value = { key, order }
+  emit('sort-change', key, order)
 }
 
-function isSelected(row: any) {
-  return selectedRows.value.some(r => getRowKey(r) === getRowKey(row));
+function isSelected(row: TableRow) {
+  return selectedRows.value.some((r) => getRowKey(r) === getRowKey(row))
 }
 
-function toggleSelect(row: any) {
-  const index = selectedRows.value.findIndex(r => getRowKey(r) === getRowKey(row));
+function toggleSelect(row: TableRow) {
+  const index = selectedRows.value.findIndex((r) => getRowKey(r) === getRowKey(row))
   if (index > -1) {
-    selectedRows.value.splice(index, 1);
+    selectedRows.value.splice(index, 1)
   } else {
-    selectedRows.value.push(row);
+    selectedRows.value.push(row)
   }
-  emit('selection-change', selectedRows.value);
+  emit('selection-change', selectedRows.value)
 }
 
 function toggleSelectAll() {
   if (allSelected.value) {
-    selectedRows.value = [];
+    selectedRows.value = []
   } else {
-    selectedRows.value = [...props.data];
+    selectedRows.value = [...props.data]
   }
-  emit('selection-change', selectedRows.value);
+  emit('selection-change', selectedRows.value)
 }
 </script>
 
@@ -171,7 +220,8 @@ function toggleSelectAll() {
   overflow: hidden;
 }
 
-.table-loading, .table-empty {
+.table-loading,
+.table-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -191,7 +241,9 @@ function toggleSelectAll() {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .table {
@@ -199,7 +251,8 @@ function toggleSelectAll() {
   border-collapse: collapse;
 }
 
-.table th, .table td {
+.table th,
+.table td {
   padding: 1rem;
   text-align: left;
   border-bottom: 1px solid #e2e8f0;
@@ -283,7 +336,7 @@ function toggleSelectAll() {
   cursor: not-allowed;
 }
 
-input[type="checkbox"] {
+input[type='checkbox'] {
   width: 16px;
   height: 16px;
   cursor: pointer;

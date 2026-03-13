@@ -5,33 +5,33 @@
 
 interface SeedData {
   tenants: Array<{
-    id: string;
-    name: string;
-    slug: string;
-    email: string;
-    plan: 'free' | 'pro' | 'enterprise';
-    status: 'active' | 'suspended' | 'deleted';
-    settings: string;
-    created_at: string;
-  }>;
+    id: string
+    name: string
+    slug: string
+    email: string
+    plan: 'free' | 'pro' | 'enterprise'
+    status: 'active' | 'suspended' | 'deleted'
+    settings: string
+    created_at: string
+  }>
   users: Array<{
-    id: string;
-    tenant_id: string;
-    email: string;
-    password: string;
-    name: string;
-    role: 'owner' | 'admin' | 'editor' | 'viewer';
-    status: 'active' | 'inactive' | 'banned';
-    created_at: string;
-  }>;
+    id: string
+    tenant_id: string
+    email: string
+    password: string
+    name: string
+    role: 'owner' | 'admin' | 'editor' | 'viewer'
+    status: 'active' | 'inactive' | 'banned'
+    created_at: string
+  }>
   collections: Array<{
-    id: string;
-    tenant_id: string;
-    name: string;
-    slug: string;
-    description: string;
-    created_at: string;
-  }>;
+    id: string
+    tenant_id: string
+    name: string
+    slug: string
+    description: string
+    created_at: string
+  }>
 }
 
 export const seedData: SeedData = {
@@ -117,22 +117,24 @@ export const seedData: SeedData = {
       created_at: new Date().toISOString(),
     },
   ],
-};
+}
 
 /**
  * 执行种子数据插入
  */
 export async function runSeeds(db: D1Database): Promise<void> {
-  console.log('Running seed data...\n');
+  console.log('Running seed data...\n')
 
   // 插入租户
-  console.log('Inserting tenants...');
+  console.log('Inserting tenants...')
   for (const tenant of seedData.tenants) {
     await db
-      .prepare(`
+      .prepare(
+        `
         INSERT OR REPLACE INTO tenants (id, name, slug, email, plan, status, settings, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `)
+      `,
+      )
       .bind(
         tenant.id,
         tenant.name,
@@ -141,20 +143,22 @@ export async function runSeeds(db: D1Database): Promise<void> {
         tenant.plan,
         tenant.status,
         tenant.settings,
-        tenant.created_at
+        tenant.created_at,
       )
-      .run();
+      .run()
   }
-  console.log(`✓ Inserted ${seedData.tenants.length} tenants`);
+  console.log(`✓ Inserted ${seedData.tenants.length} tenants`)
 
   // 插入用户
-  console.log('Inserting users...');
+  console.log('Inserting users...')
   for (const user of seedData.users) {
     await db
-      .prepare(`
+      .prepare(
+        `
         INSERT OR REPLACE INTO users (id, tenant_id, email, password, name, role, status, created_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `)
+      `,
+      )
       .bind(
         user.id,
         user.tenant_id,
@@ -163,40 +167,42 @@ export async function runSeeds(db: D1Database): Promise<void> {
         user.name,
         user.role,
         user.status,
-        user.created_at
+        user.created_at,
       )
-      .run();
+      .run()
   }
-  console.log(`✓ Inserted ${seedData.users.length} users`);
+  console.log(`✓ Inserted ${seedData.users.length} users`)
 
   // 插入集合
-  console.log('Inserting collections...');
+  console.log('Inserting collections...')
   for (const collection of seedData.collections) {
     await db
-      .prepare(`
+      .prepare(
+        `
         INSERT OR REPLACE INTO collections (id, tenant_id, name, slug, description, created_at)
         VALUES (?, ?, ?, ?, ?, ?)
-      `)
+      `,
+      )
       .bind(
         collection.id,
         collection.tenant_id,
         collection.name,
         collection.slug,
         collection.description,
-        collection.created_at
+        collection.created_at,
       )
-      .run();
+      .run()
   }
-  console.log(`✓ Inserted ${seedData.collections.length} collections`);
+  console.log(`✓ Inserted ${seedData.collections.length} collections`)
 
-  console.log('\nSeed data completed successfully!');
+  console.log('\nSeed data completed successfully!')
 }
 
 /**
  * 清空所有数据（用于重置）
  */
 export async function clearSeeds(db: D1Database): Promise<void> {
-  console.log('Clearing all data...');
+  console.log('Clearing all data...')
 
   const tables = [
     'collection_data',
@@ -207,17 +213,17 @@ export async function clearSeeds(db: D1Database): Promise<void> {
     'files',
     'users',
     'tenants',
-  ];
+  ]
 
   for (const table of tables) {
-    await db.prepare(`DELETE FROM ${table}`).run();
-    console.log(`✓ Cleared ${table}`);
+    await db.prepare(`DELETE FROM ${table}`).run()
+    console.log(`✓ Cleared ${table}`)
   }
 
-  console.log('All data cleared!');
+  console.log('All data cleared!')
 }
 
 // CLI 入口
 if (typeof Bun !== 'undefined') {
-  console.log('Seed script loaded');
+  console.log('Seed script loaded')
 }

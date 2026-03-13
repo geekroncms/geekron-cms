@@ -1,84 +1,154 @@
 <template>
-  <div class="base-form" :class="{ 'form-inline': inline }">
-    <div v-for="field in fields" :key="field.key" class="form-item" :class="{ 'has-error': errors?.[field.key] }">
-      <label v-if="field.label" class="form-label" :class="{ required: field.required }">
+  <div
+    class="base-form"
+    :class="{ 'form-inline': inline }"
+  >
+    <div
+      v-for="field in fields"
+      :key="field.key"
+      class="form-item"
+      :class="{ 'has-error': errors?.[field.key] }"
+    >
+      <label
+        v-if="field.label"
+        class="form-label"
+        :class="{ required: field.required }"
+      >
         {{ field.label }}
       </label>
-      
+
       <!-- 文本输入 -->
       <input
-        v-if="field.type === 'text' || field.type === 'email' || field.type === 'password' || field.type === 'number'"
+        v-if="
+          field.type === 'text' ||
+            field.type === 'email' ||
+            field.type === 'password' ||
+            field.type === 'number'
+        "
         :type="field.type"
         :placeholder="field.placeholder"
         :value="modelValue[field.key]"
-        @input="$emit('update:modelValue', { ...modelValue, [field.key]: ($event.target as HTMLInputElement).value })"
         class="form-input"
         :required="field.required"
-      />
-      
+        @input="
+          $emit('update:modelValue', {
+            ...modelValue,
+            [field.key]: ($event.target as HTMLInputElement).value,
+          })
+        "
+      >
+
       <!-- 文本域 -->
       <textarea
         v-else-if="field.type === 'textarea'"
         :placeholder="field.placeholder"
         :value="modelValue[field.key]"
-        @input="$emit('update:modelValue', { ...modelValue, [field.key]: ($event.target as HTMLTextAreaElement).value })"
         class="form-textarea"
         :rows="field.rows || 4"
         :required="field.required"
+        @input="
+          $emit('update:modelValue', {
+            ...modelValue,
+            [field.key]: ($event.target as HTMLTextAreaElement).value,
+          })
+        "
       />
-      
+
       <!-- 下拉选择 -->
       <select
         v-else-if="field.type === 'select'"
         :value="modelValue[field.key]"
-        @change="$emit('update:modelValue', { ...modelValue, [field.key]: ($event.target as HTMLSelectElement).value })"
         class="form-select"
         :required="field.required"
+        @change="
+          $emit('update:modelValue', {
+            ...modelValue,
+            [field.key]: ($event.target as HTMLSelectElement).value,
+          })
+        "
       >
-        <option v-if="field.placeholder" value="">{{ field.placeholder }}</option>
-        <option v-for="option in field.options" :key="option.value" :value="option.value">
+        <option
+          v-if="field.placeholder"
+          value=""
+        >
+          {{ field.placeholder }}
+        </option>
+        <option
+          v-for="option in field.options"
+          :key="option.value"
+          :value="option.value"
+        >
           {{ option.label }}
         </option>
       </select>
-      
+
       <!-- 单选框组 -->
-      <div v-else-if="field.type === 'radio'" class="form-radio-group">
-        <label v-for="option in field.options" :key="option.value" class="form-radio">
+      <div
+        v-else-if="field.type === 'radio'"
+        class="form-radio-group"
+      >
+        <label
+          v-for="option in field.options"
+          :key="option.value"
+          class="form-radio"
+        >
           <input
             type="radio"
             :value="option.value"
             :checked="modelValue[field.key] === option.value"
             @change="$emit('update:modelValue', { ...modelValue, [field.key]: option.value })"
-          />
+          >
           <span>{{ option.label }}</span>
         </label>
       </div>
-      
+
       <!-- 复选框 -->
-      <label v-else-if="field.type === 'checkbox'" class="form-checkbox">
+      <label
+        v-else-if="field.type === 'checkbox'"
+        class="form-checkbox"
+      >
         <input
           type="checkbox"
           :checked="modelValue[field.key]"
-          @change="$emit('update:modelValue', { ...modelValue, [field.key]: ($event.target as HTMLInputElement).checked })"
-        />
+          @change="
+            $emit('update:modelValue', {
+              ...modelValue,
+              [field.key]: ($event.target as HTMLInputElement).checked,
+            })
+          "
+        >
         <span>{{ field.label }}</span>
       </label>
-      
+
       <!-- 开关 -->
-      <div v-else-if="field.type === 'switch'" class="form-switch">
+      <div
+        v-else-if="field.type === 'switch'"
+        class="form-switch"
+      >
         <label class="switch">
           <input
             type="checkbox"
             :checked="modelValue[field.key]"
-            @change="$emit('update:modelValue', { ...modelValue, [field.key]: ($event.target as HTMLInputElement).checked })"
-          />
-          <span class="slider"></span>
+            @change="
+              $emit('update:modelValue', {
+                ...modelValue,
+                [field.key]: ($event.target as HTMLInputElement).checked,
+              })
+            "
+          >
+          <span class="slider" />
         </label>
-        <span v-if="field.label" class="switch-label">{{ field.label }}</span>
+        <span
+          v-if="field.label"
+          class="switch-label"
+        >{{ field.label }}</span>
       </div>
-      
+
       <!-- 错误提示 -->
-      <div v-if="errors?.[field.key]" class="form-error">
+      <div
+        v-if="errors?.[field.key]"
+        class="form-error"
+      >
         {{ errors?.[field.key] }}
       </div>
     </div>
@@ -87,25 +157,34 @@
 
 <script setup lang="ts">
 interface FormField {
-  key: string;
-  label?: string;
-  type: 'text' | 'email' | 'password' | 'number' | 'textarea' | 'select' | 'radio' | 'checkbox' | 'switch';
-  placeholder?: string;
-  required?: boolean;
-  options?: Array<{ value: string; label: string }>;
-  rows?: number;
+  key: string
+  label?: string
+  type:
+    | 'text'
+    | 'email'
+    | 'password'
+    | 'number'
+    | 'textarea'
+    | 'select'
+    | 'radio'
+    | 'checkbox'
+    | 'switch'
+  placeholder?: string
+  required?: boolean
+  options?: Array<{ value: string; label: string }>
+  rows?: number
 }
 
-const props = defineProps<{
-  modelValue: Record<string, any>;
-  fields: FormField[];
-  inline?: boolean;
-  errors?: Record<string, string>;
-}>();
+defineProps<{
+  modelValue: Record<string, unknown>
+  fields: FormField[]
+  inline?: boolean
+  errors?: Record<string, string>
+}>()
 
 defineEmits<{
-  'update:modelValue': [value: Record<string, any>];
-}>();
+  'update:modelValue': [value: Record<string, unknown>]
+}>()
 </script>
 
 <style scoped>
@@ -226,7 +305,7 @@ defineEmits<{
 
 .slider:before {
   position: absolute;
-  content: "";
+  content: '';
   height: 20px;
   width: 20px;
   left: 3px;
@@ -254,8 +333,8 @@ input:checked + .slider:before {
   color: #e53e3e;
 }
 
-input[type="radio"],
-input[type="checkbox"] {
+input[type='radio'],
+input[type='checkbox'] {
   width: 16px;
   height: 16px;
   cursor: pointer;

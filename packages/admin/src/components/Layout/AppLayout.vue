@@ -1,70 +1,132 @@
 <template>
   <div class="app-layout">
     <!-- 侧边栏 -->
-    <aside class="sidebar" :class="{ collapsed: sidebarCollapsed }">
+    <aside
+      class="sidebar"
+      :class="{ collapsed: sidebarCollapsed }"
+    >
       <div class="sidebar-header">
         <div class="logo">
           <span class="logo-icon">🦞</span>
-          <span v-if="!sidebarCollapsed" class="logo-text">Geekron CMS</span>
+          <span
+            v-if="!sidebarCollapsed"
+            class="logo-text"
+          >Geekron CMS</span>
         </div>
-        <button @click="toggleSidebar" class="toggle-btn">
+        <button
+          class="toggle-btn"
+          @click="toggleSidebar"
+        >
           <span v-if="sidebarCollapsed">›</span>
           <span v-else>‹</span>
         </button>
       </div>
-      
+
       <nav class="sidebar-nav">
-        <router-link to="/" class="nav-item" :class="{ active: $route.path === '/' }">
+        <router-link
+          to="/"
+          class="nav-item"
+          :class="{ active: $route.path === '/' }"
+        >
           <span class="nav-icon">📊</span>
-          <span v-if="!sidebarCollapsed" class="nav-text">仪表盘</span>
+          <span
+            v-if="!sidebarCollapsed"
+            class="nav-text"
+          >仪表盘</span>
         </router-link>
-        <router-link to="/collections" class="nav-item" :class="{ active: $route.path.startsWith('/collections') }">
+        <router-link
+          to="/collections"
+          class="nav-item"
+          :class="{ active: $route.path.startsWith('/collections') }"
+        >
           <span class="nav-icon">📁</span>
-          <span v-if="!sidebarCollapsed" class="nav-text">数据模型</span>
+          <span
+            v-if="!sidebarCollapsed"
+            class="nav-text"
+          >数据模型</span>
         </router-link>
-        <router-link to="/users" class="nav-item" :class="{ active: $route.path === '/users' }">
+        <router-link
+          to="/users"
+          class="nav-item"
+          :class="{ active: $route.path === '/users' }"
+        >
           <span class="nav-icon">👥</span>
-          <span v-if="!sidebarCollapsed" class="nav-text">用户管理</span>
+          <span
+            v-if="!sidebarCollapsed"
+            class="nav-text"
+          >用户管理</span>
         </router-link>
-        <router-link to="/settings" class="nav-item" :class="{ active: $route.path === '/settings' }">
+        <router-link
+          to="/settings"
+          class="nav-item"
+          :class="{ active: $route.path === '/settings' }"
+        >
           <span class="nav-icon">⚙️</span>
-          <span v-if="!sidebarCollapsed" class="nav-text">设置</span>
+          <span
+            v-if="!sidebarCollapsed"
+            class="nav-text"
+          >设置</span>
         </router-link>
       </nav>
-      
+
       <div class="sidebar-footer">
-        <div class="user-info" v-if="!sidebarCollapsed && authStore.user">
-          <div class="avatar">{{ authStore.user.name?.charAt(0) || 'U' }}</div>
+        <div
+          v-if="!sidebarCollapsed && authStore.user"
+          class="user-info"
+        >
+          <div class="avatar">
+            {{ authStore.user.name?.charAt(0) || 'U' }}
+          </div>
           <div class="user-details">
-            <div class="user-name">{{ authStore.user.name }}</div>
-            <div class="user-email">{{ authStore.user.email }}</div>
+            <div class="user-name">
+              {{ authStore.user.name }}
+            </div>
+            <div class="user-email">
+              {{ authStore.user.email }}
+            </div>
           </div>
         </div>
-        <button @click="handleLogout" class="logout-btn" :title="sidebarCollapsed ? '退出登录' : ''">
+        <button
+          class="logout-btn"
+          :title="sidebarCollapsed ? '退出登录' : ''"
+          @click="handleLogout"
+        >
           <span class="nav-icon">🚪</span>
           <span v-if="!sidebarCollapsed">退出登录</span>
         </button>
       </div>
     </aside>
-    
+
     <!-- 主内容区 -->
     <div class="main-container">
       <!-- 顶栏 -->
       <header class="topbar">
         <div class="breadcrumb">
-          <template v-for="(item, index) in breadcrumbs" :key="index">
-            <router-link v-if="item.path && index < breadcrumbs.length - 1" :to="item.path" class="breadcrumb-item">
-              {{ item.name }}
-            </router-link>
-            <span v-else class="breadcrumb-item active">{{ item.name }}</span>
-            <span v-if="index < breadcrumbs.length - 1" class="breadcrumb-separator">/</span>
-          </template>
+          <router-link
+            v-for="(item, index) in breadcrumbLinks"
+            :key="'link-' + index"
+            :to="item.path"
+            class="breadcrumb-item"
+          >
+            {{ item.name }}
+          </router-link>
+          <span
+            v-for="(item, index) in breadcrumbLinks"
+            :key="'sep-' + index"
+            class="breadcrumb-separator"
+          >/</span>
+          <span
+            class="breadcrumb-item active"
+          >{{ lastBreadcrumbName }}</span>
         </div>
         <div class="topbar-actions">
-          <span class="tenant-badge" v-if="authStore.tenantId">租户：{{ authStore.tenantId.slice(0, 8) }}...</span>
+          <span
+            v-if="authStore.tenantId"
+            class="tenant-badge"
+          >租户：{{ authStore.tenantId.slice(0, 8) }}...</span>
         </div>
       </header>
-      
+
       <!-- 内容区 -->
       <main class="content">
         <slot />
@@ -74,59 +136,68 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { useAuthStore } from '@/stores/auth';
+import { ref, computed } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 
-const route = useRoute();
-const router = useRouter();
-const authStore = useAuthStore();
+import { useAuthStore } from '@/stores/auth'
 
-const sidebarCollapsed = ref(false);
+const route = useRoute()
+const router = useRouter()
+const authStore = useAuthStore()
+
+const sidebarCollapsed = ref(false)
 
 interface BreadcrumbItem {
-  name: string;
-  path?: string;
+  name: string
+  path?: string
 }
 
 const breadcrumbs = computed(() => {
-  const path = route.path;
-  const parts = path.split('/').filter(Boolean);
-  
+  const path = route.path
+  const parts = path.split('/').filter(Boolean)
+
   if (parts.length === 0) {
-    return [{ name: '仪表盘', path: '/' }];
+    return [{ name: '仪表盘', path: '/' }]
   }
-  
-  const result: BreadcrumbItem[] = [{ name: '仪表盘', path: '/' }];
-  let currentPath = '';
-  
+
+  const result: BreadcrumbItem[] = [{ name: '仪表盘', path: '/' }]
+  let currentPath = ''
+
   const names: Record<string, string> = {
-    'collections': '数据模型',
-    'users': '用户管理',
-    'settings': '设置',
-  };
-  
+    collections: '数据模型',
+    users: '用户管理',
+    settings: '设置',
+  }
+
   parts.forEach((part, index) => {
-    currentPath += '/' + part;
-    const name = names[part] || part;
-    
+    currentPath += '/' + part
+    const name = names[part] || part
+
     if (index < parts.length - 1) {
-      result.push({ name, path: currentPath });
+      result.push({ name, path: currentPath })
     } else {
-      result.push({ name, path: undefined });
+      result.push({ name, path: undefined })
     }
-  });
-  
-  return result;
-});
+  })
+
+  return result
+})
+
+const breadcrumbLinks = computed(() => {
+  return breadcrumbs.value.filter((item, index) => item.path && index < breadcrumbs.value.length - 1)
+})
+
+const lastBreadcrumbName = computed(() => {
+  return breadcrumbs.value[breadcrumbs.value.length - 1]?.name || ''
+})
 
 function toggleSidebar() {
-  sidebarCollapsed.value = !sidebarCollapsed.value;
+  sidebarCollapsed.value = !sidebarCollapsed.value
 }
 
 function handleLogout() {
-  authStore.logout();
-  router.push('/login');
+  authStore.logout()
+  router.push('/login')
 }
 </script>
 
@@ -370,11 +441,11 @@ function handleLogout() {
     z-index: 100;
     transform: translateX(-100%);
   }
-  
+
   .sidebar:not(.collapsed) {
     transform: translateX(0);
   }
-  
+
   .sidebar.collapsed {
     width: 240px;
   }

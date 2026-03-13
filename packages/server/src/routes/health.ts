@@ -1,6 +1,7 @@
-import { Hono } from 'hono';
+import { Hono } from 'hono'
+import type { Bindings, Variables } from '../types/hono'
 
-export const healthRoutes = new Hono();
+export const healthRoutes = new Hono<{ Bindings: Bindings; Variables: Variables }>
 
 /**
  * GET /health
@@ -11,8 +12,8 @@ healthRoutes.get('/', (c) => {
     status: 'ok',
     timestamp: new Date().toISOString(),
     version: '0.0.1',
-  });
-});
+  })
+})
 
 /**
  * GET /health/ready
@@ -21,18 +22,21 @@ healthRoutes.get('/', (c) => {
 healthRoutes.get('/ready', async (c) => {
   try {
     // 检查 D1 数据库连接
-    await c.env.DB.prepare('SELECT 1').first();
-    
+    await c.env.DB.prepare('SELECT 1').first()
+
     return c.json({
       status: 'ready',
       database: 'connected',
       timestamp: new Date().toISOString(),
-    });
+    })
   } catch (error) {
-    return c.json({
-      status: 'not_ready',
-      database: 'disconnected',
-      error: (error as Error).message,
-    }, 503);
+    return c.json(
+      {
+        status: 'not_ready',
+        database: 'disconnected',
+        error: (error as Error).message,
+      },
+      503,
+    )
   }
-});
+})

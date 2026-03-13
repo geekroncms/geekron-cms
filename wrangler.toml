@@ -1,36 +1,17 @@
-name = "geekron-cms"
-main = "packages/server/src/index.ts"
+name = "geekron-cms-server"
 compatibility_date = "2024-01-01"
-compatibility_flags = ["nodejs_compat"]
+main = "dist/server/index.js"
 
-# 开发环境配置
 [vars]
-NODE_ENV = "development"
-REDIS_URL = "redis://localhost:6379"
-MINIO_ENDPOINT = "localhost:9000"
-MINIO_ACCESS_KEY = "minioadmin"
-MINIO_SECRET_KEY = "minioadmin"
-
-# D1 数据库配置
-[[d1_databases]]
-binding = "D1_DATABASE"
-database_name = "geekron-d1-local"
-database_id = "local-d1-db"
-migrations_dir = "infra/migrations"
-
-# 本地开发配置
-[dev]
-port = 3000
-local_protocol = "http"
-
-# 生产环境配置
-[env.production]
-name = "geekron-cms-prod"
-
-[env.production.vars]
 NODE_ENV = "production"
 
-[[env.production.d1_databases]]
-binding = "D1_DATABASE"
-database_name = "geekron-d1-prod"
-database_id = "prod-d1-db-id"
+# D1 Database (需要手动创建)
+# [[d1_databases]]
+# binding = "DB"
+# database_name = "geekron-cms-db"
+# database_id = "xxx"
+
+# R2 Bucket (需要手动创建)
+# [[r2_buckets]]
+# binding = "BUCKET"
+# bucket_name = "geekron-cms-files"

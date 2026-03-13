@@ -1,0 +1,84 @@
+name: Feishu Notification
+
+on:
+  pull_request:
+    types: [opened, closed, labeled, ready_for_review]
+  pull_request_review:
+    types: [submitted]
+  check_suite:
+    types: [completed]
+  issues:
+    types: [opened, closed, labeled]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    if: ${{ secrets.FEISHU_WEBHOOK != '' }}
+    steps:
+      - name: Send Feishu notification
+        uses: fjogeleit/http-request-action@v1
+        with:
+          url: ${{ secrets.FEISHU_WEBHOOK }}
+          method: 'POST'
+          customHeaders: '{"Content-Type": "application/json"}'
+          data: |
+            {
+              "msg_type": "interactive",
+              "card": {
+                "config": {
+                  "wide_screen_mode": true
+                },
+                "header": {
+                  "template": "${{ github.event_name == 'pull_request' && 'blue' || (github.event_name == 'check_suite' && github.event.check_suite.conclusion == 'failure' && 'red' || 'green') }}",
+                  "title": {
+                    "tag": "plain_text",
+                    "content": "${{ github.event_name == 'pull_request' && github.event.action == 'opened' && '📝 新的 PR' || (github.event_name == 'pull_request' && github.event.action == 'closed' && '🎉 PR 已合并' || (github.event_name == 'pull_request_review' && '✅ Code Review' || (github.event_name == 'check_suite' && github.event.check_suite.conclusion == 'success' && '✅ CI 通过' || '❌ CI 失败'))) }}"
+                  }
+                },
+                "elements": [
+                  {
+                    "tag": "div",
+                    "text": {
+                      "tag": "lark_md",
+                      "content": "**${{ github.event.pull_request.title || github.event.issue.title || 'GitHub 事件通知' }}**\n\n链接：${{ github.event.pull_request.html_url || github.event.issue.html_url || github.event.check_suite.html_url }}"
+                    }
+                  },
+                  {
+                    "tag": "div",
+                    "fields": [
+                      {
+                        "is_short": true,
+                        "text": {
+                          "tag": "lark_md",
+                          "content": "**发起人**\n${{ github.event.sender.login }}"
+                        }
+                      },
+                      {
+                        "is_short": true,
+                        "text": {
+                          "tag": "lark_md",
+                          "content": "**仓库**\n${{ github.repository }}"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "hr"
+                  },
+                  {
+                    "tag": "action",
+                    "actions": [
+                      {
+                        "tag": "button",
+                        "text": {
+                          "tag": "plain_text",
+                          "content": "查看详情"
+                        },
+                        "url": "${{ github.event.pull_request.html_url || github.event.issue.html_url || github.event.check_suite.html_url }}",
+                        "type": "primary"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }

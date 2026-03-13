@@ -1,0 +1,30 @@
+# Auto-assign configuration
+# See: https://github.com/kentaro-m/auto-assign
+
+addReviewers: true
+addAssignees: author
+
+reviewers:
+  - geekroncms
+
+numberOfReviewers: 1
+
+filterLabels:
+  exclude:
+    - WIP
+    - draft
+    - work-in-progress
+
+# Optional: Skip if PR is from certain branches
+skipKeywords:
+  - WIP
+  - draft
+
+# Optional: Use specific reviewers for certain paths
+pathReviewers:
+  'src/frontend/**/*':
+    - frontend-lead
+  'src/backend/**/*':
+    - backend-lead
+  'src/database/**/*':
+    - dba-lead

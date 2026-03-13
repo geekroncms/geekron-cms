@@ -1,0 +1,134 @@
+name: Deploy to Cloudflare Pages
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      deployments: write
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Build
+        run: npm run build
+        env:
+          NODE_ENV: production
+      
+      - name: Run tests
+        run: npm test
+        continue-on-error: true
+      
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=geekron-cms --branch=${{ github.ref_name }}
+        
+      - name: Get Preview URL
+        id: preview-url
+        run: |
+          DEPLOYMENT_URL=$(echo "https://${{ github.ref_name }}-geekron-cms.${{ secrets.CLOUDFLARE_PROJECT_DOMAIN }}")
+          echo "deployment_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
+          echo "🚀 Deployment URL: $DEPLOYMENT_URL"
+      
+      - name: Send Feishu notification
+        if: ${{ secrets.FEISHU_WEBHOOK != '' }}
+        uses: fjogeleit/http-request-action@v1
+        with:
+          url: ${{ secrets.FEISHU_WEBHOOK }}
+          method: 'POST'
+          customHeaders: '{"Content-Type": "application/json"}'
+          data: |
+            {
+              "msg_type": "interactive",
+              "card": {
+                "config": {
+                  "wide_screen_mode": true
+                },
+                "header": {
+                  "template": "green",
+                  "title": {
+                    "tag": "plain_text",
+                    "content": "🚀 部署成功"
+                  }
+                },
+                "elements": [
+                  {
+                    "tag": "div",
+                    "text": {
+                      "tag": "lark_md",
+                      "content": "**geekron-cms** 已部署到 Cloudflare Pages\n\n**分支**: ${{ github.ref_name }}\n**提交**: ${{ github.sha }}\n**提交信息**: ${{ github.event.head_commit.message }}"
+                    }
+                  },
+                  {
+                    "tag": "div",
+                    "fields": [
+                      {
+                        "is_short": true,
+                        "text": {
+                          "tag": "lark_md",
+                          "content": "**部署人**\n${{ github.actor }}"
+                        }
+                      },
+                      {
+                        "is_short": true,
+                        "text": {
+                          "tag": "lark_md",
+                          "content": "**环境**\n${{ github.ref_name == 'main' && '生产环境' || '预览环境' }}"
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "hr"
+                  },
+                  {
+                    "tag": "action",
+                    "actions": [
+                      {
+                        "tag": "button",
+                        "text": {
+                          "tag": "plain_text",
+                          "content": "🌐 访问测试地址"
+                        },
+                        "url": "${{ steps.preview-url.outputs.deployment_url }}",
+                        "type": "primary"
+                      },
+                      {
+                        "tag": "button",
+                        "text": {
+                          "tag": "plain_text",
+                          "content": "📊 查看部署详情"
+                        },
+                        "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}",
+                        "type": "default"
+                      }
+                    ]
+                  }
+                ]
+              }
+            }

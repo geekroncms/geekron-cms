@@ -54,7 +54,8 @@ jobs:
           if [ "${{ github.ref_name }}" = "main" ]; then
             DEPLOYMENT_URL="https://geekron-cms-admin.pages.dev"
           else
-            DEPLOYMENT_URL="https://${{ github.ref_name }}.geekron-cms-admin.pages.dev"
+            # develop 分支预览 URL 格式
+            DEPLOYMENT_URL="https://develop-geekron-cms-admin.pages.dev"
           fi
           echo "deployment_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
           echo "🚀 Deployment URL: $DEPLOYMENT_URL"

@@ -1,19 +1,9 @@
 {
   "extends": [
-    "../../.eslintrc.json",
-    "plugin:vue/vue3-recommended",
-    "plugin:@typescript-eslint/recommended"
+    "../../.eslintrc.json"
   ],
-  "parser": "vue-eslint-parser",
-  "parserOptions": {
-    "parser": "@typescript-eslint/parser",
-    "project": "./tsconfig.json",
-    "extraFileExtensions": [".vue"]
-  },
-  "plugins": ["vue"],
   "rules": {
     "vue/multi-word-component-names": "off",
-    "vue/no-unused-vars": "warn",
-    "@typescript-eslint/no-unused-vars": ["error", { "argsIgnorePattern": "^_" }]
+    "vue/no-unused-vars": "warn"
   }
 }

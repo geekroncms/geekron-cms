@@ -4,7 +4,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "lib": ["ES2022"],
-    "types": ["@types/bun", "@types/uuid"],
+    "types": ["@types/bun", "@types/uuid", "@cloudflare/workers-types"],
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -19,6 +19,7 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src/**/*", "tests/**/*"],
+  "include": ["src/**/*", "src/**/*.d.ts"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "tests/**"],
   "exclude": ["node_modules", "dist"]
 }

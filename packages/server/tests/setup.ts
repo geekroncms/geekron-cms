@@ -5,13 +5,13 @@
 
 // Global beforeAll
 beforeAll(() => {
-  console.log('Test environment initialized');
-});
+  console.log('Test environment initialized')
+})
 
-// Global afterAll  
+// Global afterAll
 afterAll(() => {
-  console.log('Test cleanup complete');
-});
+  console.log('Test cleanup complete')
+})
 
 // Export for use in other test files
-export {};
+export {}

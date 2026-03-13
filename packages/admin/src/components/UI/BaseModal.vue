@@ -1,27 +1,55 @@
 <template>
   <Teleport to="body">
-    <div v-if="modelValue" class="modal-overlay" @click="handleOverlayClick" :data-testid="overlayTestid">
-      <div 
-        class="modal" 
+    <div
+      v-if="modelValue"
+      class="modal-overlay"
+      :data-testid="overlayTestid"
+      @click="handleOverlayClick"
+    >
+      <div
+        class="modal"
         :class="[`modal-${size}`, { 'modal-centered': centered }]"
-        @click.stop
         :data-testid="modalTestid"
+        @click.stop
       >
-        <div v-if="$slots.header || title" class="modal-header">
+        <div
+          v-if="$slots.header || title"
+          class="modal-header"
+        >
           <slot name="header">
             <h2>{{ title }}</h2>
           </slot>
-          <button v-if="showClose" @click="close" class="modal-close" :data-testid="closeBtnTestid">×</button>
+          <button
+            v-if="showClose"
+            class="modal-close"
+            :data-testid="closeBtnTestid"
+            @click="close"
+          >
+            ×
+          </button>
         </div>
-        
+
         <div class="modal-body">
-          <slot></slot>
+          <slot />
         </div>
-        
-        <div v-if="$slots.footer" class="modal-footer">
+
+        <div
+          v-if="$slots.footer"
+          class="modal-footer"
+        >
           <slot name="footer">
-            <button @click="close" class="btn btn-secondary">取消</button>
-            <button @click="confirm" class="btn btn-primary">确认</button>
+            <button
+              class="btn btn-secondary"
+              @click="close"
+            >
+              取消
+            </button>
+            <button
+              class="btn btn-primary"
+              @click="confirm"
+            >
+              确认
+            </button>
           </slot>
         </div>
       </div>
@@ -31,15 +59,15 @@
 
 <script setup lang="ts">
 interface Props {
-  modelValue: boolean;
-  title?: string;
-  size?: 'sm' | 'md' | 'lg' | 'xl';
-  centered?: boolean;
-  closeOnOverlay?: boolean;
-  showClose?: boolean;
-  overlayTestid?: string;
-  modalTestid?: string;
-  closeBtnTestid?: string;
+  modelValue: boolean
+  title?: string
+  size?: 'sm' | 'md' | 'lg' | 'xl'
+  centered?: boolean
+  closeOnOverlay?: boolean
+  showClose?: boolean
+  overlayTestid?: string
+  modalTestid?: string
+  closeBtnTestid?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -48,6 +76,9 @@ const props = withDefaults(defineProps<Props>(), {
   centered: true,
   closeOnOverlay: true,
   showClose: true,
+  overlayTestid: '',
+  modalTestid: '',
+  closeBtnTestid: '',
 })
 
 const emit = defineEmits(['update:modelValue', 'close', 'confirm'])
@@ -98,10 +129,22 @@ const handleOverlayClick = () => {
   margin: auto;
 }
 
-.modal-sm { width: 90%; max-width: 400px; }
-.modal-md { width: 90%; max-width: 500px; }
-.modal-lg { width: 90%; max-width: 700px; }
-.modal-xl { width: 90%; max-width: 900px; }
+.modal-sm {
+  width: 90%;
+  max-width: 400px;
+}
+.modal-md {
+  width: 90%;
+  max-width: 500px;
+}
+.modal-lg {
+  width: 90%;
+  max-width: 700px;
+}
+.modal-xl {
+  width: 90%;
+  max-width: 900px;
+}
 
 .modal-header {
   display: flex;
@@ -155,8 +198,12 @@ const handleOverlayClick = () => {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideIn {

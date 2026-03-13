@@ -1,40 +1,55 @@
 <template>
   <div class="login-page">
     <div class="login-container">
-      <h1 data-testid="page-title">Geekron CMS</h1>
-      <p class="subtitle">管理后台</p>
-      
-      <form @submit.prevent="handleLogin" class="login-form">
+      <h1 data-testid="page-title">
+        Geekron CMS
+      </h1>
+      <p class="subtitle">
+        管理后台
+      </p>
+
+      <form
+        class="login-form"
+        @submit.prevent="handleLogin"
+      >
         <div class="form-group">
           <label for="email">邮箱</label>
-          <input 
+          <input
             id="email"
-            v-model="email" 
-            type="email" 
+            v-model="email"
+            type="email"
             name="email"
             required
             data-testid="email-input"
             placeholder="admin@example.com"
-          />
+          >
         </div>
         <div class="form-group">
           <label for="password">密码</label>
-          <input 
+          <input
             id="password"
-            v-model="password" 
-            type="password" 
+            v-model="password"
+            type="password"
             name="password"
             required
             data-testid="password-input"
             placeholder="password123"
-          />
+          >
         </div>
-        <button type="submit" class="btn btn-primary" data-testid="login-btn">
+        <button
+          type="submit"
+          class="btn btn-primary"
+          data-testid="login-btn"
+        >
           登录
         </button>
       </form>
-      
-      <div v-if="error" class="error-message" data-testid="error-message">
+
+      <div
+        v-if="error"
+        class="error-message"
+        data-testid="error-message"
+      >
         {{ error }}
       </div>
     </div>
@@ -42,32 +57,34 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { api } from '@/api';
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 
-const router = useRouter();
-const email = ref('admin@example.com');
-const password = ref('password123');
-const error = ref('');
+import api from '@/api'
+
+const router = useRouter()
+const email = ref('admin@example.com')
+const password = ref('password123')
+const error = ref('')
 
 const handleLogin = async () => {
   try {
     const response = await api.post('/auth/login', {
       email: email.value,
       password: password.value,
-    });
-    
+    })
+
     // 保存 token
-    localStorage.setItem('token', response.data.token);
-    localStorage.setItem('userRole', response.data.user?.role || 'user');
-    
+    localStorage.setItem('token', response.data.token)
+    localStorage.setItem('userRole', response.data.user?.role || 'user')
+
     // 跳转到首页
-    router.push('/');
-  } catch (err: any) {
-    error.value = err.response?.data?.message || '登录失败，请检查邮箱和密码';
+    router.push('/')
+  } catch (err: unknown) {
+    const error_ = err as { response?: { data?: { message?: string } } }
+    error.value = error_.response?.data?.message || '登录失败，请检查邮箱和密码'
   }
-};
+}
 </script>
 
 <style scoped>
@@ -83,7 +100,7 @@ const handleLogin = async () => {
   background: white;
   padding: 3rem;
   border-radius: 12px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   width: 100%;
   max-width: 400px;
 }

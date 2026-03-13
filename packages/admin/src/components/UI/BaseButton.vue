@@ -1,25 +1,37 @@
 <template>
-  <button 
-    :type="type" 
-    :class="['btn', `btn-${variant}`, { 'btn-sm': size === 'sm', 'btn-lg': size === 'lg', 'btn-block': block, 'btn-loading': loading }]"
+  <button
+    :type="type"
+    :class="[
+      'btn',
+      `btn-${variant}`,
+      {
+        'btn-sm': size === 'sm',
+        'btn-lg': size === 'lg',
+        'btn-block': block,
+        'btn-loading': loading,
+      },
+    ]"
     :disabled="disabled || loading"
     :data-testid="dataTestid"
     @click="$emit('click', $event)"
   >
-    <span v-if="loading" class="btn-spinner"></span>
-    <slot></slot>
+    <span
+      v-if="loading"
+      class="btn-spinner"
+    />
+    <slot />
   </button>
 </template>
 
 <script setup lang="ts">
 interface Props {
-  type?: 'button' | 'submit' | 'reset';
-  variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'info';
-  size?: 'sm' | 'md' | 'lg';
-  disabled?: boolean;
-  loading?: boolean;
-  block?: boolean;
-  dataTestid?: string;
+  type?: 'button' | 'submit' | 'reset'
+  variant?: 'primary' | 'secondary' | 'success' | 'danger' | 'warning' | 'info'
+  size?: 'sm' | 'md' | 'lg'
+  disabled?: boolean
+  loading?: boolean
+  block?: boolean
+  dataTestid?: string
 }
 
 withDefaults(defineProps<Props>(), {
@@ -29,9 +41,10 @@ withDefaults(defineProps<Props>(), {
   disabled: false,
   loading: false,
   block: false,
+  dataTestid: '',
 })
 
-defineEmits(['click']);
+defineEmits(['click'])
 </script>
 
 <style scoped>
@@ -142,6 +155,8 @@ defineEmits(['click']);
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 </style>

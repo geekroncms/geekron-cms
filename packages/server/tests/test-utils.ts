@@ -1,6 +1,6 @@
 /**
  * Test Utilities for Geekron CMS
- * 
+ *
  * Provides helper functions for:
  * - Authentication (JWT, API Key generation)
  * - Tenant context setup
@@ -8,7 +8,7 @@
  * - Test data factories
  */
 
-import { jwtVerify, SignJWT } from 'jose';
+import { SignJWT } from 'jose'
 
 // ============================================================================
 // Authentication Helpers
@@ -18,14 +18,14 @@ import { jwtVerify, SignJWT } from 'jose';
  * Generate a test JWT token
  */
 export async function generateTestJWT(payload: {
-  sub: string;
-  email: string;
-  role?: string;
-  tenant_id?: string;
-  permissions?: string[];
+  sub: string
+  email: string
+  role?: string
+  tenant_id?: string
+  permissions?: string[]
 }): Promise<string> {
-  const secret = new TextEncoder().encode('test-secret-key');
-  
+  const secret = new TextEncoder().encode('test-secret-key')
+
   return new SignJWT({
     email: payload.email,
     role: payload.role || 'user',
@@ -36,69 +36,69 @@ export async function generateTestJWT(payload: {
     .setIssuedAt()
     .setSubject(payload.sub)
     .setExpirationTime('2h')
-    .sign(secret);
+    .sign(secret)
 }
 
 /**
  * Generate a test API Key
  */
 export function generateTestApiKey(tenantId: string): {
-  key: string;
-  hashedKey: string;
+  key: string
+  hashedKey: string
 } {
-  const uuid = crypto.randomUUID().replace(/-/g, '');
-  const key = `gk_test_${tenantId}_${uuid}`;
-  const hashedKey = hashApiKeySync(key);
-  return { key, hashedKey };
+  const uuid = crypto.randomUUID().replace(/-/g, '')
+  const key = `gk_test_${tenantId}_${uuid}`
+  const hashedKey = hashApiKeySync(key)
+  return { key, hashedKey }
 }
 
 /**
  * Hash API Key synchronously for testing
  */
 function hashApiKeySync(key: string): string {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(key);
+  const encoder = new TextEncoder()
+  const data = encoder.encode(key)
   // Use Web Crypto API
-  const hashBuffer = crypto.subtle.digest('SHA-256', data);
+  const hashBuffer = crypto.subtle.digest('SHA-256', data)
   // For sync testing, we'll use a simple hash
   // In real code, this would be async
-  let hash = 0;
+  let hash = 0
   for (let i = 0; i < key.length; i++) {
-    const char = key.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
+    const char = key.charCodeAt(i)
+    hash = (hash << 5) - hash + char
+    hash = hash & hash
   }
-  return Math.abs(hash).toString(16).padStart(64, '0');
+  return Math.abs(hash).toString(16).padStart(64, '0')
 }
 
 /**
  * Create authentication headers for requests
  */
 export function createAuthHeaders(options?: {
-  jwt?: string;
-  apiKey?: string;
-  tenantId?: string;
-  contentType?: string;
+  jwt?: string
+  apiKey?: string
+  tenantId?: string
+  contentType?: string
 }): Record<string, string> {
-  const headers: Record<string, string> = {};
-  
+  const headers: Record<string, string> = {}
+
   if (options?.contentType !== false) {
-    headers['Content-Type'] = options?.contentType || 'application/json';
+    headers['Content-Type'] = options?.contentType || 'application/json'
   }
-  
+
   if (options?.jwt) {
-    headers['Authorization'] = `Bearer ${options.jwt}`;
+    headers['Authorization'] = `Bearer ${options.jwt}`
   }
-  
+
   if (options?.apiKey) {
-    headers['X-API-Key'] = options.apiKey;
+    headers['X-API-Key'] = options.apiKey
   }
-  
+
   if (options?.tenantId) {
-    headers['X-Tenant-ID'] = options.tenantId;
+    headers['X-Tenant-ID'] = options.tenantId
   }
-  
-  return headers;
+
+  return headers
 }
 
 // ============================================================================
@@ -124,23 +124,23 @@ export function createMockTenant(overrides?: Partial<MockTenant>): MockTenant {
     usage_storage_mb: overrides?.usage_storage_mb || 0,
     usage_users: overrides?.usage_users || 0,
     ...overrides,
-  };
+  }
 }
 
 export interface MockTenant {
-  id: string;
-  name: string;
-  subdomain: string;
-  email: string;
-  plan: 'free' | 'pro' | 'enterprise';
-  status: 'active' | 'suspended' | 'deleted';
-  settings: string;
-  quota_api_calls: number;
-  quota_storage_mb: number;
-  quota_users: number;
-  usage_api_calls: number;
-  usage_storage_mb: number;
-  usage_users: number;
+  id: string
+  name: string
+  subdomain: string
+  email: string
+  plan: 'free' | 'pro' | 'enterprise'
+  status: 'active' | 'suspended' | 'deleted'
+  settings: string
+  quota_api_calls: number
+  quota_storage_mb: number
+  quota_users: number
+  usage_api_calls: number
+  usage_storage_mb: number
+  usage_users: number
 }
 
 // ============================================================================
@@ -161,18 +161,18 @@ export function createMockUser(overrides?: Partial<MockUser>): MockUser {
     permissions: overrides?.permissions || ['read'],
     created_at: overrides?.created_at || new Date().toISOString(),
     ...overrides,
-  };
+  }
 }
 
 export interface MockUser {
-  id: string;
-  email: string;
-  name: string;
-  password_hash: string;
-  role: 'user' | 'admin' | 'owner';
-  tenant_id: string;
-  permissions: string[];
-  created_at: string;
+  id: string
+  email: string
+  name: string
+  password_hash: string
+  role: 'user' | 'admin' | 'owner'
+  tenant_id: string
+  permissions: string[]
+  created_at: string
 }
 
 // ============================================================================
@@ -183,27 +183,27 @@ export interface MockUser {
  * Mock D1 Database for testing
  */
 export class MockD1Database {
-  private data: Map<string, any[]> = new Map();
-  private singleRecords: Map<string, any> = new Map();
+  private data: Map<string, any[]> = new Map()
+  private singleRecords: Map<string, any> = new Map()
 
   prepare(query: string) {
-    return new MockD1Statement(this, query);
+    return new MockD1Statement(this, query)
   }
 
   setSingleRecord(key: string, record: any) {
-    this.singleRecords.set(key, record);
+    this.singleRecords.set(key, record)
   }
 
   getSingleRecord(key: string): any {
-    return this.singleRecords.get(key);
+    return this.singleRecords.get(key)
   }
 
   setRecords(key: string, records: any[]) {
-    this.data.set(key, records);
+    this.data.set(key, records)
   }
 
   getRecords(key: string): any[] {
-    return this.data.get(key) || [];
+    return this.data.get(key) || []
   }
 }
 
@@ -211,74 +211,74 @@ export class MockD1Database {
  * Mock D1 Statement for testing
  */
 export class MockD1Statement {
-  private db: MockD1Database;
-  private query: string;
-  private params: any[] = [];
-  private mockFirstResult: any = null;
-  private mockRunResult: any = { success: true };
-  private mockAllResults: any[] = [];
+  private db: MockD1Database
+  private query: string
+  private params: any[] = []
+  private mockFirstResult: any = null
+  private mockRunResult: any = { success: true }
+  private mockAllResults: any[] = []
 
   constructor(db: MockD1Database, query: string) {
-    this.db = db;
-    this.query = query;
+    this.db = db
+    this.query = query
   }
 
   bind(...params: any[]) {
-    this.params = params;
-    return this;
+    this.params = params
+    return this
   }
 
   /**
    * Set mock result for first() call
    */
   setMockFirst(result: any) {
-    this.mockFirstResult = result;
-    return this;
+    this.mockFirstResult = result
+    return this
   }
 
   /**
    * Set mock result for run() call
    */
   setMockRun(result: any) {
-    this.mockRunResult = result;
-    return this;
+    this.mockRunResult = result
+    return this
   }
 
   /**
    * Set mock results for all() call
    */
   setMockAll(results: any[]) {
-    this.mockAllResults = results;
-    return this;
+    this.mockAllResults = results
+    return this
   }
 
   async first() {
     if (this.mockFirstResult !== null) {
-      return this.mockFirstResult;
+      return this.mockFirstResult
     }
-    
+
     // Check if there's a single record set
-    const key = this.query + JSON.stringify(this.params);
-    const record = this.db.getSingleRecord(key);
+    const key = this.query + JSON.stringify(this.params)
+    const record = this.db.getSingleRecord(key)
     if (record) {
-      return record;
+      return record
     }
-    
-    return null;
+
+    return null
   }
 
   async run() {
-    return this.mockRunResult;
+    return this.mockRunResult
   }
 
   async all() {
     if (this.mockAllResults.length > 0) {
-      return { results: this.mockAllResults };
+      return { results: this.mockAllResults }
     }
-    
-    const key = this.query + JSON.stringify(this.params);
-    const records = this.db.getRecords(key);
-    return { results: records };
+
+    const key = this.query + JSON.stringify(this.params)
+    const records = this.db.getRecords(key)
+    return { results: records }
   }
 }
 
@@ -290,9 +290,9 @@ export class MockD1Statement {
  * Create a mock environment for testing
  */
 export function createMockEnv(options?: {
-  db?: MockD1Database;
-  jwtSecret?: string;
-  kv?: any;
+  db?: MockD1Database
+  jwtSecret?: string
+  kv?: any
 }): any {
   return {
     DB: options?.db || new MockD1Database(),
@@ -301,7 +301,7 @@ export function createMockEnv(options?: {
     SUPABASE_URL: 'http://localhost:54321',
     SUPABASE_KEY: 'test-key',
     KV: options?.kv || null,
-  };
+  }
 }
 
 // ============================================================================
@@ -312,11 +312,11 @@ export function createMockEnv(options?: {
  * Parse JSON response safely
  */
 export async function parseResponse<T>(response: Response): Promise<T> {
-  const text = await response.text();
+  const text = await response.text()
   try {
-    return JSON.parse(text) as T;
+    return JSON.parse(text) as T
   } catch {
-    return text as any;
+    return text as any
   }
 }
 
@@ -325,7 +325,7 @@ export async function parseResponse<T>(response: Response): Promise<T> {
  */
 export function expectSuccess(response: Response): void {
   if (response.status < 200 || response.status >= 300) {
-    throw new Error(`Expected success response, got ${response.status}`);
+    throw new Error(`Expected success response, got ${response.status}`)
   }
 }
 
@@ -334,7 +334,7 @@ export function expectSuccess(response: Response): void {
  */
 export function expectStatus(response: Response, expected: number): void {
   if (response.status !== expected) {
-    throw new Error(`Expected status ${expected}, got ${response.status}`);
+    throw new Error(`Expected status ${expected}, got ${response.status}`)
   }
 }
 
@@ -360,17 +360,17 @@ export function createMockCollection(overrides?: Partial<MockCollection>): MockC
     created_at: overrides?.created_at || new Date().toISOString(),
     updated_at: overrides?.updated_at || new Date().toISOString(),
     ...overrides,
-  };
+  }
 }
 
 export interface MockCollection {
-  id: string;
-  name: string;
-  description: string;
-  tenant_id: string;
-  schema: any;
-  created_at: string;
-  updated_at: string;
+  id: string
+  name: string
+  description: string
+  tenant_id: string
+  schema: any
+  created_at: string
+  updated_at: string
 }
 
 // ============================================================================
@@ -390,17 +390,17 @@ export function createMockFile(overrides?: Partial<MockFile>): MockFile {
     uploaded_by: overrides?.uploaded_by || 'test-user-id',
     created_at: overrides?.created_at || new Date().toISOString(),
     ...overrides,
-  };
+  }
 }
 
 export interface MockFile {
-  id: string;
-  name: string;
-  mime_type: string;
-  size: number;
-  tenant_id: string;
-  uploaded_by: string;
-  created_at: string;
+  id: string
+  name: string
+  mime_type: string
+  size: number
+  tenant_id: string
+  uploaded_by: string
+  created_at: string
 }
 
 // ============================================================================
@@ -419,17 +419,17 @@ export function createMockQuotas(overrides?: Partial<MockQuotas>): MockQuotas {
     max_collections: overrides?.max_collections || 10,
     max_api_keys: overrides?.max_api_keys || 5,
     plan: overrides?.plan || 'free',
-  };
+  }
 }
 
 export interface MockQuotas {
-  max_requests_per_minute: number;
-  max_requests_per_day: number;
-  max_storage_bytes: number;
-  max_users: number;
-  max_collections: number;
-  max_api_keys: number;
-  plan: 'free' | 'pro' | 'enterprise';
+  max_requests_per_minute: number
+  max_requests_per_day: number
+  max_storage_bytes: number
+  max_users: number
+  max_collections: number
+  max_api_keys: number
+  plan: 'free' | 'pro' | 'enterprise'
 }
 
 /**
@@ -443,14 +443,14 @@ export function createMockUsage(overrides?: Partial<MockUsage>): MockUsage {
     users_count: overrides?.users_count || 0,
     collections_count: overrides?.collections_count || 0,
     api_keys_count: overrides?.api_keys_count || 0,
-  };
+  }
 }
 
 export interface MockUsage {
-  requests_today: number;
-  requests_this_minute: number;
-  storage_bytes: number;
-  users_count: number;
-  collections_count: number;
-  api_keys_count: number;
+  requests_today: number
+  requests_this_minute: number
+  storage_bytes: number
+  users_count: number
+  collections_count: number
+  api_keys_count: number
 }

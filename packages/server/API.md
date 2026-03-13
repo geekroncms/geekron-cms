@@ -7,13 +7,17 @@ Base URL: `/api/v1`
 Most endpoints require authentication via JWT token or API key.
 
 ### JWT Token
+
 Include in Authorization header:
+
 ```
 Authorization: Bearer <your-jwt-token>
 ```
 
 ### API Key
+
 Include in X-API-Key header:
+
 ```
 X-API-Key: gk_<your-api-key>
 ```
@@ -23,9 +27,11 @@ X-API-Key: gk_<your-api-key>
 ## Authentication Endpoints
 
 ### POST `/auth/register`
+
 Register a new user.
 
 **Request:**
+
 ```json
 {
   "email": "user@example.com",
@@ -35,6 +41,7 @@ Register a new user.
 ```
 
 **Response (201):**
+
 ```json
 {
   "id": "user-uuid",
@@ -45,9 +52,11 @@ Register a new user.
 ```
 
 ### POST `/auth/login`
+
 Login and receive JWT token.
 
 **Request:**
+
 ```json
 {
   "email": "user@example.com",
@@ -56,6 +65,7 @@ Login and receive JWT token.
 ```
 
 **Response (200):**
+
 ```json
 {
   "token": "eyJhbGciOiJIUzI1NiIs...",
@@ -69,11 +79,13 @@ Login and receive JWT token.
 ```
 
 ### GET `/auth/me`
+
 Get current user info.
 
 **Headers:** `Authorization: Bearer <token>`
 
 **Response (200):**
+
 ```json
 {
   "id": "user-uuid",
@@ -87,11 +99,13 @@ Get current user info.
 ```
 
 ### POST `/auth/change-password`
+
 Change current user password.
 
 **Headers:** `Authorization: Bearer <token>`
 
 **Request:**
+
 ```json
 {
   "currentPassword": "old-password",
@@ -104,13 +118,16 @@ Change current user password.
 ## User Management
 
 ### GET `/users`
+
 List all users (tenant-scoped).
 
 **Query Parameters:**
+
 - `page` (default: 1)
 - `limit` (default: 20)
 
 **Response (200):**
+
 ```json
 {
   "data": [...],
@@ -124,12 +141,15 @@ List all users (tenant-scoped).
 ```
 
 ### GET `/users/:id`
+
 Get user by ID.
 
 ### POST `/users`
+
 Create a new user.
 
 **Request:**
+
 ```json
 {
   "email": "newuser@example.com",
@@ -141,9 +161,11 @@ Create a new user.
 ```
 
 ### PATCH `/users/:id`
+
 Update user.
 
 **Request:**
+
 ```json
 {
   "name": "Updated Name",
@@ -152,6 +174,7 @@ Update user.
 ```
 
 ### DELETE `/users/:id`
+
 Delete user.
 
 ---
@@ -159,9 +182,11 @@ Delete user.
 ## Collections (Data Models)
 
 ### POST `/collections`
+
 Create a new collection (data model).
 
 **Request:**
+
 ```json
 {
   "name": "Articles",
@@ -189,12 +214,15 @@ Create a new collection (data model).
 ```
 
 ### GET `/collections`
+
 List all collections.
 
 ### GET `/collections/:id`
+
 Get collection details with fields.
 
 ### DELETE `/collections/:id`
+
 Delete collection.
 
 ---
@@ -202,9 +230,11 @@ Delete collection.
 ## Collection Data (Dynamic Content)
 
 ### POST `/data`
+
 Create a new data entry.
 
 **Request:**
+
 ```json
 {
   "collectionId": "collection-uuid",
@@ -217,21 +247,26 @@ Create a new data entry.
 ```
 
 ### GET `/data/:collectionId`
+
 List data entries in a collection.
 
 **Query Parameters:**
+
 - `page`, `limit`
 - `filter` (JSON string): `{"status": "published"}`
 - `sort`: field name
 - `order`: `asc` or `desc`
 
 ### GET `/data/:collectionId/:id`
+
 Get single data entry.
 
 ### PATCH `/data/:collectionId/:id`
+
 Update data entry.
 
 **Request:**
+
 ```json
 {
   "data": {
@@ -242,12 +277,15 @@ Update data entry.
 ```
 
 ### DELETE `/data/:collectionId/:id`
+
 Delete data entry.
 
 ### POST `/data/:collectionId/bulk`
+
 Bulk create data entries.
 
 **Request:**
+
 ```json
 {
   "items": [
@@ -262,16 +300,20 @@ Bulk create data entries.
 ## File Management
 
 ### POST `/files/upload`
+
 Upload a file to R2 storage.
 
 **Query Parameters:**
+
 - `name` (optional): Custom filename
 - `folder` (default: 'uploads')
 
 **FormData:**
+
 - `file`: The file to upload
 
 **Response (201):**
+
 ```json
 {
   "id": "file-uuid",
@@ -285,6 +327,7 @@ Upload a file to R2 storage.
 ```
 
 **Supported MIME Types:**
+
 - Images: `image/jpeg`, `image/png`, `image/gif`, `image/webp`, `image/svg+xml`
 - Documents: `application/pdf`, `application/msword`, etc.
 - Spreadsheets: `application/vnd.ms-excel`, etc.
@@ -294,15 +337,19 @@ Upload a file to R2 storage.
 **Max File Size:** 50MB (500MB for multipart uploads)
 
 ### GET `/files`
+
 List all files.
 
 ### GET `/files/:id`
+
 Get file info.
 
 ### GET `/files/:id/download`
+
 Download file content.
 
 ### DELETE `/files/:id`
+
 Delete file.
 
 ---
@@ -310,9 +357,11 @@ Delete file.
 ## API Keys
 
 ### POST `/api-keys`
+
 Create a new API key.
 
 **Request:**
+
 ```json
 {
   "name": "Production API Key",
@@ -322,6 +371,7 @@ Create a new API key.
 ```
 
 **Response (201):**
+
 ```json
 {
   "id": "key-uuid",
@@ -336,21 +386,27 @@ Create a new API key.
 ⚠️ **Important:** The API key is only shown once. Store it securely.
 
 ### GET `/api-keys`
+
 List all API keys (keys are not exposed).
 
 ### GET `/api-keys/:id`
+
 Get API key info.
 
 ### PATCH `/api-keys/:id`
+
 Update API key.
 
 ### DELETE `/api-keys/:id`
+
 Revoke API key.
 
 ### POST `/api-keys/:id/rotate`
+
 Rotate API key (generate new key).
 
 **Response:**
+
 ```json
 {
   "id": "key-uuid",
@@ -360,9 +416,11 @@ Rotate API key (generate new key).
 ```
 
 ### POST `/api-keys/validate`
+
 Validate an API key.
 
 **Request:**
+
 ```json
 {
   "key": "gk_..."
@@ -370,6 +428,7 @@ Validate an API key.
 ```
 
 **Response:**
+
 ```json
 {
   "valid": true,
@@ -396,15 +455,15 @@ All errors follow this format:
 
 ### Common Error Codes
 
-| Code | HTTP Status | Description |
-|------|-------------|-------------|
-| `UNAUTHORIZED` | 401 | Missing or invalid authentication |
-| `FORBIDDEN` | 403 | Insufficient permissions |
-| `NOT_FOUND` | 404 | Resource not found |
-| `CONFLICT` | 409 | Resource already exists |
-| `INVALID_INPUT` | 400 | Validation error |
-| `VALIDATION_ERROR` | 400 | Zod validation failed |
-| `INTERNAL_ERROR` | 500 | Server error |
+| Code               | HTTP Status | Description                       |
+| ------------------ | ----------- | --------------------------------- |
+| `UNAUTHORIZED`     | 401         | Missing or invalid authentication |
+| `FORBIDDEN`        | 403         | Insufficient permissions          |
+| `NOT_FOUND`        | 404         | Resource not found                |
+| `CONFLICT`         | 409         | Resource already exists           |
+| `INVALID_INPUT`    | 400         | Validation error                  |
+| `VALIDATION_ERROR` | 400         | Zod validation failed             |
+| `INTERNAL_ERROR`   | 500         | Server error                      |
 
 ### Example Error Response
 
@@ -427,10 +486,12 @@ All errors follow this format:
 ## Rate Limiting
 
 API keys and JWT tokens are subject to rate limiting:
+
 - 1000 requests per minute for authenticated requests
 - 100 requests per minute for unauthenticated requests
 
 Rate limit headers:
+
 ```
 X-RateLimit-Limit: 1000
 X-RateLimit-Remaining: 999
@@ -441,16 +502,19 @@ X-RateLimit-Reset: 1647072000
 
 ## Tenant Isolation
 
-All resources are tenant-scoped. The `X-Tenant-ID` header is automatically set by the authentication middleware. Cross-tenant access is not permitted.
+All resources are tenant-scoped. The `X-Tenant-ID` header is automatically set
+by the authentication middleware. Cross-tenant access is not permitted.
 
 ---
 
 ## Health Check
 
 ### GET `/health`
+
 Check server health.
 
 **Response (200):**
+
 ```json
 {
   "status": "healthy",

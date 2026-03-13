@@ -1,7 +1,7 @@
 # 前端页面完善报告
 
 **执行日期**: 2026-03-12  
-**执行状态**: ✅ 完成  
+**执行状态**: ✅ 完成
 
 ---
 
@@ -9,14 +9,14 @@
 
 ### 1. 创建缺失页面（4 个）
 
-| 页面 | 文件 | 行数 | 功能 |
-|------|------|------|------|
-| **租户管理** | `Tenants.vue` | 260 行 | CRUD + 状态管理 |
-| **用户管理** | `Users.vue` | 120 行 | 用户列表 + 删除 |
-| **系统设置** | `Settings.vue` | 100 行 | 租户信息 + 配额显示 |
-| **API Key 管理** | `ApiKeys.vue` | 220 行 | CRUD + 轮换 + 复制 |
-| **Dashboard** | `Dashboard.vue` | 修复 | 统计卡片 + 快速操作 |
-| **登录页** | `Login.vue` | 修复 | 认证流程 |
+| 页面             | 文件            | 行数   | 功能                |
+| ---------------- | --------------- | ------ | ------------------- |
+| **租户管理**     | `Tenants.vue`   | 260 行 | CRUD + 状态管理     |
+| **用户管理**     | `Users.vue`     | 120 行 | 用户列表 + 删除     |
+| **系统设置**     | `Settings.vue`  | 100 行 | 租户信息 + 配额显示 |
+| **API Key 管理** | `ApiKeys.vue`   | 220 行 | CRUD + 轮换 + 复制  |
+| **Dashboard**    | `Dashboard.vue` | 修复   | 统计卡片 + 快速操作 |
+| **登录页**       | `Login.vue`     | 修复   | 认证流程            |
 
 ### 2. 更新路由配置
 
@@ -37,6 +37,7 @@
 ## 📊 页面功能详情
 
 ### Tenants.vue（租户管理）
+
 - ✅ 租户列表展示
 - ✅ 创建租户模态框
 - ✅ 租户状态切换（激活/暂停）
@@ -44,12 +45,14 @@
 - ✅ 数据测试 ID 完整
 
 ### Users.vue（用户管理）
+
 - ✅ 用户列表展示
 - ✅ 角色显示（owner/admin/editor/viewer）
 - ✅ 用户删除功能
 - ✅ 状态徽章
 
 ### ApiKeys.vue（API Key 管理）
+
 - ✅ API Key 列表（卡片视图）
 - ✅ 创建 API Key 模态框
 - ✅ 权限选择（read/write/delete/admin）
@@ -58,6 +61,7 @@
 - ✅ 过期时间显示
 
 ### Settings.vue（系统设置）
+
 - ✅ 租户信息编辑
 - ✅ 套餐显示
 - ✅ 配额使用进度条
@@ -65,11 +69,13 @@
 - ✅ 存储空间统计
 
 ### Dashboard.vue（仪表盘）
+
 - ✅ 统计卡片（租户/用户/API/存储）
 - ✅ 快速操作入口
 - ✅ 响应式布局
 
 ### Login.vue（登录页）
+
 - ✅ 邮箱密码登录
 - ✅ Token 持久化
 - ✅ 错误提示
@@ -80,12 +86,14 @@
 ## 🎯 E2E 测试状态
 
 ### 修复前
+
 ```
 ✘ 8 个测试全部失败
 原因：页面元素未找到
 ```
 
 ### 修复后
+
 ```
 测试文件：api-keys.spec.ts
 测试用例：5 个
@@ -93,8 +101,9 @@
 ```
 
 ### 测试用例清单
+
 1. ✅ should display API Key page
-2. ✅ should create API key successfully  
+2. ✅ should create API key successfully
 3. ✅ should display API key list
 4. ✅ should show permissions
 5. ✅ （待添加）should rotate API key
@@ -104,6 +113,7 @@
 ## 📦 文件变更
 
 ### 新增文件
+
 ```
 packages/admin/src/views/
 ├── Tenants.vue        (260 行)
@@ -115,6 +125,7 @@ packages/admin/src/views/
 ```
 
 ### 修改文件
+
 ```
 packages/admin/src/router/index.ts    (新增路由)
 packages/admin/e2e/api-keys.spec.ts   (修复选择器)
@@ -125,7 +136,9 @@ packages/admin/e2e/api-keys.spec.ts   (修复选择器)
 ## 🚀 下一步
 
 ### 立即可做
+
 1. **重新运行 E2E 测试**
+
    ```bash
    cd packages/admin
    bunx playwright test e2e/api-keys.spec.ts
@@ -137,6 +150,7 @@ packages/admin/e2e/api-keys.spec.ts   (修复选择器)
    - 测试各管理页面
 
 ### 后续优化
+
 1. **完善其他页面**
    - Collections.vue（已有，需增强）
    - Content.vue（待创建）

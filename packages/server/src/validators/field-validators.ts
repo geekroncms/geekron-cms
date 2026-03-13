@@ -3,68 +3,68 @@
  * Validation functions for all supported field types
  */
 
-import { FieldConfig, FieldType } from '../utils/field-types';
+import { FieldConfig, FieldType } from '../utils/field-types'
 
 /**
  * Validation result interface
  */
 export interface ValidationResult {
-  valid: boolean;
-  errors: string[];
-  value?: any;
+  valid: boolean
+  errors: string[]
+  value?: any
 }
 
 /**
  * Email regex pattern
  */
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 /**
  * URL regex pattern (supports http, https, ftp)
  */
-const URL_REGEX = /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i;
+const URL_REGEX = /^(https?|ftp):\/\/[^\s/$.?#].[^\s]*$/i
 
 /**
  * Phone regex pattern (supports international formats)
  */
-const PHONE_REGEX = /^\+?[\d\s-()]{8,20}$/;
+const PHONE_REGEX = /^\+?[\d\s-()]{8,20}$/
 
 /**
  * Text field validator
  * Validates string length and pattern
  */
 export function textValidator(value: any, config?: FieldConfig): ValidationResult {
-  const errors: string[] = [];
+  const errors: string[] = []
 
   // Handle null/undefined
   if (value === null || value === undefined) {
-    return { valid: true, errors: [], value: null };
+    return { valid: true, errors: [], value: null }
   }
 
   // Type check
   if (typeof value !== 'string') {
-    return { valid: false, errors: ['Value must be a string'], value };
+    return { valid: false, errors: ['Value must be a string'], value }
   }
 
   // Min length validation
   if (config?.minLength !== undefined && value.length < config.minLength) {
-    errors.push(`Text must be at least ${config.minLength} characters`);
+    errors.push(`Text must be at least ${config.minLength} characters`)
   }
 
   // Max length validation
   if (config?.maxLength !== undefined && value.length > config.maxLength) {
-    errors.push(`Text must be at most ${config.maxLength} characters`);
+    errors.push(`Text must be at most ${config.maxLength} characters`)
   }
 
   // Pattern validation
   if (config?.pattern) {
     try {
-      const regex = new RegExp(config.pattern);
+      const regex = new RegExp(config.pattern)
       if (!regex.test(value)) {
-        errors.push(`Text does not match required pattern`);
+        errors.push(`Text does not match required pattern`)
       }
     } catch (e) {
-      errors.push('Invalid pattern in field configuration');
+      errors.push('Invalid pattern in field configuration')
     }
   }
 
@@ -72,7 +72,7 @@ export function textValidator(value: any, config?: FieldConfig): ValidationResul
     valid: errors.length === 0,
     errors,
     value: errors.length === 0 ? value : undefined,
-  };
+  }
 }
 
 /**
@@ -80,33 +80,33 @@ export function textValidator(value: any, config?: FieldConfig): ValidationResul
  * Validates email format
  */
 export function emailValidator(value: any, config?: FieldConfig): ValidationResult {
-  const errors: string[] = [];
+  const errors: string[] = []
 
   // Handle null/undefined
   if (value === null || value === undefined) {
-    return { valid: true, errors: [], value: null };
+    return { valid: true, errors: [], value: null }
   }
 
   // Type check
   if (typeof value !== 'string') {
-    return { valid: false, errors: ['Value must be a string'], value };
+    return { valid: false, errors: ['Value must be a string'], value }
   }
 
   // Email format validation
   if (!EMAIL_REGEX.test(value)) {
-    errors.push('Invalid email format');
+    errors.push('Invalid email format')
   }
 
   // Additional length constraints
   if (config?.maxLength !== undefined && value.length > config.maxLength) {
-    errors.push(`Email must be at most ${config.maxLength} characters`);
+    errors.push(`Email must be at most ${config.maxLength} characters`)
   }
 
   return {
     valid: errors.length === 0,
     errors,
     value: errors.length === 0 ? value : undefined,
-  };
+  }
 }
 
 /**
@@ -114,28 +114,28 @@ export function emailValidator(value: any, config?: FieldConfig): ValidationResu
  * Validates URL format
  */
 export function urlValidator(value: any, config?: FieldConfig): ValidationResult {
-  const errors: string[] = [];
+  const errors: string[] = []
 
   // Handle null/undefined
   if (value === null || value === undefined) {
-    return { valid: true, errors: [], value: null };
+    return { valid: true, errors: [], value: null }
   }
 
   // Type check
   if (typeof value !== 'string') {
-    return { valid: false, errors: ['Value must be a string'], value };
+    return { valid: false, errors: ['Value must be a string'], value }
   }
 
   // URL format validation
   if (!URL_REGEX.test(value)) {
-    errors.push('Invalid URL format');
+    errors.push('Invalid URL format')
   }
 
   return {
     valid: errors.length === 0,
     errors,
     value: errors.length === 0 ? value : undefined,
-  };
+  }
 }
 
 /**
@@ -143,28 +143,28 @@ export function urlValidator(value: any, config?: FieldConfig): ValidationResult
  * Validates phone number format
  */
 export function phoneValidator(value: any, config?: FieldConfig): ValidationResult {
-  const errors: string[] = [];
+  const errors: string[] = []
 
   // Handle null/undefined
   if (value === null || value === undefined) {
-    return { valid: true, errors: [], value: null };
+    return { valid: true, errors: [], value: null }
   }
 
   // Type check
   if (typeof value !== 'string') {
-    return { valid: false, errors: ['Value must be a string'], value };
+    return { valid: false, errors: ['Value must be a string'], value }
   }
 
   // Phone format validation
   if (!PHONE_REGEX.test(value)) {
-    errors.push('Invalid phone number format');
+    errors.push('Invalid phone number format')
   }
 
   return {
     valid: errors.length === 0,
     errors,
     value: errors.length === 0 ? value : undefined,
-  };
+  }
 }
 
 /**
@@ -172,43 +172,43 @@ export function phoneValidator(value: any, config?: FieldConfig): ValidationResu
  * Validates numeric value and range
  */
 export function numberValidator(value: any, config?: FieldConfig): ValidationResult {
-  const errors: string[] = [];
+  const errors: string[] = []
 
   // Handle null/undefined
   if (value === null || value === undefined) {
-    return { valid: true, errors: [], value: null };
+    return { valid: true, errors: [], value: null }
   }
 
   // Type check (allow string numbers)
-  let numValue: number;
+  let numValue: number
   if (typeof value === 'number') {
-    numValue = value;
+    numValue = value
   } else if (typeof value === 'string' && !isNaN(Number(value))) {
-    numValue = Number(value);
+    numValue = Number(value)
   } else {
-    return { valid: false, errors: ['Value must be a number'], value };
+    return { valid: false, errors: ['Value must be a number'], value }
   }
 
   // Check for NaN
   if (isNaN(numValue)) {
-    return { valid: false, errors: ['Value must be a valid number'], value };
+    return { valid: false, errors: ['Value must be a valid number'], value }
   }
 
   // Min validation
   if (config?.min !== undefined && numValue < config.min) {
-    errors.push(`Value must be at least ${config.min}`);
+    errors.push(`Value must be at least ${config.min}`)
   }
 
   // Max validation
   if (config?.max !== undefined && numValue > config.max) {
-    errors.push(`Value must be at most ${config.max}`);
+    errors.push(`Value must be at most ${config.max}`)
   }
 
   return {
     valid: errors.length === 0,
     errors,
     value: errors.length === 0 ? numValue : undefined,
-  };
+  }
 }
 
 /**
@@ -218,26 +218,26 @@ export function numberValidator(value: any, config?: FieldConfig): ValidationRes
 export function booleanValidator(value: any, config?: FieldConfig): ValidationResult {
   // Handle null/undefined
   if (value === null || value === undefined) {
-    return { valid: true, errors: [], value: null };
+    return { valid: true, errors: [], value: null }
   }
 
   // Type check
   if (typeof value !== 'boolean') {
     // Allow string "true"/"false" and 0/1
     if (value === 'true' || value === '1' || value === 1) {
-      return { valid: true, errors: [], value: true };
+      return { valid: true, errors: [], value: true }
     }
     if (value === 'false' || value === '0' || value === 0) {
-      return { valid: true, errors: [], value: false };
+      return { valid: true, errors: [], value: false }
     }
-    return { valid: false, errors: ['Value must be a boolean'], value };
+    return { valid: false, errors: ['Value must be a boolean'], value }
   }
 
   return {
     valid: true,
     errors: [],
     value,
-  };
+  }
 }
 
 /**
@@ -245,36 +245,36 @@ export function booleanValidator(value: any, config?: FieldConfig): ValidationRe
  * Validates date value
  */
 export function dateValidator(value: any, config?: FieldConfig): ValidationResult {
-  const errors: string[] = [];
+  const errors: string[] = []
 
   // Handle null/undefined
   if (value === null || value === undefined) {
-    return { valid: true, errors: [], value: null };
+    return { valid: true, errors: [], value: null }
   }
 
-  let dateValue: Date;
+  let dateValue: Date
 
   // Handle different input types
   if (value instanceof Date) {
-    dateValue = value;
+    dateValue = value
   } else if (typeof value === 'string') {
-    dateValue = new Date(value);
+    dateValue = new Date(value)
   } else if (typeof value === 'number') {
-    dateValue = new Date(value);
+    dateValue = new Date(value)
   } else {
-    return { valid: false, errors: ['Value must be a date'], value };
+    return { valid: false, errors: ['Value must be a date'], value }
   }
 
   // Check for invalid date
   if (isNaN(dateValue.getTime())) {
-    return { valid: false, errors: ['Invalid date value'], value };
+    return { valid: false, errors: ['Invalid date value'], value }
   }
 
   return {
     valid: true,
     errors: [],
     value: dateValue,
-  };
+  }
 }
 
 /**
@@ -284,7 +284,7 @@ export function dateValidator(value: any, config?: FieldConfig): ValidationResul
 export function jsonValidator(value: any, config?: FieldConfig): ValidationResult {
   // Handle null/undefined
   if (value === null || value === undefined) {
-    return { valid: true, errors: [], value: null };
+    return { valid: true, errors: [], value: null }
   }
 
   // If it's already an object/array, it's valid
@@ -293,24 +293,24 @@ export function jsonValidator(value: any, config?: FieldConfig): ValidationResul
       valid: true,
       errors: [],
       value,
-    };
+    }
   }
 
   // If it's a string, try to parse it
   if (typeof value === 'string') {
     try {
-      const parsed = JSON.parse(value);
+      const parsed = JSON.parse(value)
       return {
         valid: true,
         errors: [],
         value: parsed,
-      };
+      }
     } catch (e) {
-      return { valid: false, errors: ['Invalid JSON format'], value };
+      return { valid: false, errors: ['Invalid JSON format'], value }
     }
   }
 
-  return { valid: false, errors: ['Value must be a valid JSON object or array'], value };
+  return { valid: false, errors: ['Value must be a valid JSON object or array'], value }
 }
 
 /**
@@ -318,28 +318,28 @@ export function jsonValidator(value: any, config?: FieldConfig): ValidationResul
  * Validates single select value
  */
 export function selectValidator(value: any, config?: FieldConfig): ValidationResult {
-  const errors: string[] = [];
+  const errors: string[] = []
 
   // Handle null/undefined
   if (value === null || value === undefined) {
-    return { valid: true, errors: [], value: null };
+    return { valid: true, errors: [], value: null }
   }
 
   // Type check
   if (typeof value !== 'string') {
-    return { valid: false, errors: ['Value must be a string'], value };
+    return { valid: false, errors: ['Value must be a string'], value }
   }
 
   // Check if value is in options
   if (config?.options && !config.options.includes(value)) {
-    errors.push(`Value must be one of: ${config.options.join(', ')}`);
+    errors.push(`Value must be one of: ${config.options.join(', ')}`)
   }
 
   return {
     valid: errors.length === 0,
     errors,
     value: errors.length === 0 ? value : undefined,
-  };
+  }
 }
 
 /**
@@ -347,26 +347,26 @@ export function selectValidator(value: any, config?: FieldConfig): ValidationRes
  * Validates multiple select values
  */
 export function multiselectValidator(value: any, config?: FieldConfig): ValidationResult {
-  const errors: string[] = [];
+  const errors: string[] = []
 
   // Handle null/undefined
   if (value === null || value === undefined) {
-    return { valid: true, errors: [], value: null };
+    return { valid: true, errors: [], value: null }
   }
 
   // Type check - must be array
   if (!Array.isArray(value)) {
-    return { valid: false, errors: ['Value must be an array'], value };
+    return { valid: false, errors: ['Value must be an array'], value }
   }
 
   // Check each value
   for (const item of value) {
     if (typeof item !== 'string') {
-      errors.push('All values must be strings');
-      break;
+      errors.push('All values must be strings')
+      break
     }
     if (config?.options && !config.options.includes(item)) {
-      errors.push(`Value "${item}" is not a valid option`);
+      errors.push(`Value "${item}" is not a valid option`)
     }
   }
 
@@ -374,7 +374,7 @@ export function multiselectValidator(value: any, config?: FieldConfig): Validati
     valid: errors.length === 0,
     errors,
     value: errors.length === 0 ? value : undefined,
-  };
+  }
 }
 
 /**
@@ -382,28 +382,28 @@ export function multiselectValidator(value: any, config?: FieldConfig): Validati
  * Validates relation field value (ID reference)
  */
 export function relationValidator(value: any, config?: FieldConfig): ValidationResult {
-  const errors: string[] = [];
+  const errors: string[] = []
 
   // Handle null/undefined
   if (value === null || value === undefined) {
-    return { valid: true, errors: [], value: null };
+    return { valid: true, errors: [], value: null }
   }
 
   // Type check - relation should be a string ID or array of IDs
   if (typeof value !== 'string' && !Array.isArray(value)) {
-    return { valid: false, errors: ['Value must be a string ID or array of IDs'], value };
+    return { valid: false, errors: ['Value must be a string ID or array of IDs'], value }
   }
 
   // Validate ID format (basic check - should be non-empty string)
   if (typeof value === 'string' && value.trim() === '') {
-    errors.push('Relation ID cannot be empty');
+    errors.push('Relation ID cannot be empty')
   }
 
   if (Array.isArray(value)) {
     for (const id of value) {
       if (typeof id !== 'string' || id.trim() === '') {
-        errors.push('All relation IDs must be non-empty strings');
-        break;
+        errors.push('All relation IDs must be non-empty strings')
+        break
       }
     }
   }
@@ -415,7 +415,7 @@ export function relationValidator(value: any, config?: FieldConfig): ValidationR
     valid: errors.length === 0,
     errors,
     value: errors.length === 0 ? value : undefined,
-  };
+  }
 }
 
 /**
@@ -435,16 +435,16 @@ export function validateField(value: any, config: FieldConfig): ValidationResult
     select: selectValidator,
     multiselect: multiselectValidator,
     relation: relationValidator,
-  };
+  }
 
-  const validator = validators[config.type];
+  const validator = validators[config.type]
   if (!validator) {
     return {
       valid: false,
       errors: [`Unknown field type: ${config.type}`],
       value,
-    };
+    }
   }
 
-  return validator(value, config);
+  return validator(value, config)
 }

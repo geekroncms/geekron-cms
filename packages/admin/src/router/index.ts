@@ -1,4 +1,4 @@
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHistory } from 'vue-router'
 
 const routes = [
   {
@@ -54,56 +54,53 @@ const routes = [
     name: 'NotFound',
     redirect: '/',
   },
-];
+]
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
-});
+})
 
 // 路由守卫
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token');
-  const isAuthenticated = !!token;
-  
+  const token = localStorage.getItem('token')
+  const isAuthenticated = !!token
+
   // 设置页面标题
-  document.title = to.meta.title 
-    ? `${to.meta.title} - Geekron CMS` 
-    : 'Geekron CMS';
-  
+  document.title = to.meta.title ? `${to.meta.title} - Geekron CMS` : 'Geekron CMS'
+
   // 需要认证的路由
   if (to.meta.requiresAuth && !isAuthenticated) {
-    next('/login');
-    return;
+    next('/login')
+    return
   }
-  
+
   // 访客路由（已登录不能访问）
   if (to.meta.guest && isAuthenticated) {
-    next('/');
-    return;
+    next('/')
+    return
   }
-  
+
   // 权限检查
   if (to.meta.permission) {
-    const userRole = localStorage.getItem('userRole');
-    const requiredPermission = to.meta.permission as string;
-    
+    const userRole = localStorage.getItem('userRole')
+    const requiredPermission = to.meta.permission as string
+
     // 简单的权限检查逻辑
-    const hasPermission = 
-      requiredPermission === 'admin' && userRole === 'admin';
-    
+    const hasPermission = requiredPermission === 'admin' && userRole === 'admin'
+
     if (!hasPermission) {
-      next('/');
-      return;
+      next('/')
+      return
     }
   }
-  
-  next();
-});
+
+  next()
+})
 
 // 导航完成后滚动到顶部
 router.afterEach(() => {
-  window.scrollTo(0, 0);
-});
+  window.scrollTo(0, 0)
+})
 
-export default router;
+export default router

@@ -43,12 +43,13 @@ bun test --coverage
 ```
 
 输出示例：
+
 ```
 ------------------------------------|---------|---------|-------------------
 File                                | % Funcs | % Lines | Uncovered Line #s
 ------------------------------------|---------|---------|-------------------
 All files                           |   90.50 |   91.23 |
- src/middleware/auth.ts             |  100.00 |  100.00 | 
+ src/middleware/auth.ts             |  100.00 |  100.00 |
  src/routes/tenants.ts              |   95.00 |   96.50 | 45-48
 ------------------------------------|---------|---------|-------------------
 ```
@@ -69,27 +70,27 @@ it('should create tenant with correct plan quotas', async () => {
     subdomain: 'test',
     email: 'test@example.com',
     plan: 'pro',
-  };
-  
-  const mockDB = new MockD1Database();
+  }
+
+  const mockDB = new MockD1Database()
   mockDB.setSingleRecord('quota-query', {
     quota_api_calls: 10000,
     quota_storage_mb: 1000,
-  });
+  })
 
   // Act - 执行测试操作
   const res = await app.request('/api/v1/tenants', {
     method: 'POST',
     headers: createAuthHeaders(),
     body: JSON.stringify(tenantData),
-  });
+  })
 
   // Assert - 验证结果
-  expect(res.status).toBe(201);
-  const body = await res.json();
-  expect(body.plan).toBe('pro');
-  expect(body.quotas.apiCalls).toBe(10000);
-});
+  expect(res.status).toBe(201)
+  const body = await res.json()
+  expect(body.plan).toBe('pro')
+  expect(body.quotas.apiCalls).toBe(10000)
+})
 ```
 
 ### 测试命名规范
@@ -100,7 +101,7 @@ describe('POST /tenants', () => {
   it('should create a new tenant successfully', async () => { ... });
   it('should reject duplicate subdomain', async () => { ... });
   it('should return 400 for invalid email format', async () => { ... });
-  
+
   // ❌ 避免：模糊或不完整的命名
   it('test create', async () => { ... });
   it('should work', async () => { ... });
@@ -132,13 +133,13 @@ describe('Auth Middleware', () => {
 
 ### 目标覆盖率
 
-| 模块类型 | 最低要求 | 目标 |
-|---------|---------|------|
-| **整体覆盖率** | 85% | **90%+** |
-| **核心中间件** | 90% | **95%+** |
-| **关键业务逻辑** | 90% | **95%+** |
-| **路由层** | 85% | **90%+** |
-| **工具函数** | 95% | **100%** |
+| 模块类型         | 最低要求 | 目标     |
+| ---------------- | -------- | -------- |
+| **整体覆盖率**   | 85%      | **90%+** |
+| **核心中间件**   | 90%      | **95%+** |
+| **关键业务逻辑** | 90%      | **95%+** |
+| **路由层**       | 85%      | **90%+** |
+| **工具函数**     | 95%      | **100%** |
 
 ### 必须覆盖的场景
 
@@ -191,28 +192,28 @@ tests/
 ### 数据库 Mock
 
 ```typescript
-import { MockD1Database } from './test-utils';
+import { MockD1Database } from './test-utils'
 
-const mockDB = new MockD1Database();
+const mockDB = new MockD1Database()
 
 // 设置单条记录
 mockDB.setSingleRecord('tenant-query', {
   id: 'tenant-123',
   name: 'Test Tenant',
   plan: 'free',
-});
+})
 
 // 设置多条记录
 mockDB.setRecords('tenants-list', [
   { id: '1', name: 'Tenant 1' },
   { id: '2', name: 'Tenant 2' },
-]);
+])
 ```
 
 ### JWT Token Mock
 
 ```typescript
-import { generateTestJWT } from './test-utils';
+import { generateTestJWT } from './test-utils'
 
 const token = await generateTestJWT({
   sub: 'user-123',
@@ -220,33 +221,33 @@ const token = await generateTestJWT({
   role: 'admin',
   tenant_id: 'tenant-123',
   permissions: ['read', 'write'],
-});
+})
 ```
 
 ### API Key Mock
 
 ```typescript
-import { generateTestApiKey } from './test-utils';
+import { generateTestApiKey } from './test-utils'
 
-const { key, hashedKey } = generateTestApiKey('tenant-123');
+const { key, hashedKey } = generateTestApiKey('tenant-123')
 ```
 
 ### 认证 Headers
 
 ```typescript
-import { createAuthHeaders } from './test-utils';
+import { createAuthHeaders } from './test-utils'
 
 // JWT 认证
 const headers = createAuthHeaders({
   jwt: token,
   tenantId: 'tenant-123',
-});
+})
 
 // API Key 认证
 const headers = createAuthHeaders({
   apiKey: 'gk_test_...',
   tenantId: 'tenant-123',
-});
+})
 ```
 
 ---
@@ -258,24 +259,25 @@ const headers = createAuthHeaders({
 **原因**: 缺少认证 headers
 
 **解决**:
+
 ```typescript
 // ❌ 错误 - 缺少认证
 const res = await app.request('/api/v1/tenants', {
   method: 'POST',
   body: JSON.stringify(data),
-});
+})
 
 // ✅ 正确 - 添加认证
-const token = await generateTestJWT({ sub: 'user', email: 'test@example.com' });
+const token = await generateTestJWT({ sub: 'user', email: 'test@example.com' })
 const res = await app.request('/api/v1/tenants', {
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${token}`,
+    Authorization: `Bearer ${token}`,
     'X-Tenant-ID': 'tenant-123',
   },
   body: JSON.stringify(data),
-});
+})
 ```
 
 ### Q: 数据库操作返回 undefined
@@ -283,19 +285,21 @@ const res = await app.request('/api/v1/tenants', {
 **原因**: Mock DB 没有设置对应的查询结果
 
 **解决**:
+
 ```typescript
-const mockDB = new MockD1Database();
+const mockDB = new MockD1Database()
 
 // 明确设置查询结果
 mockDB.setSingleRecord('SELECT * FROM tenants WHERE id = ?', {
   id: 'tenant-123',
   name: 'Test',
-});
+})
 ```
 
 ### Q: 覆盖率不达标
 
 **检查清单**:
+
 - [ ] 所有边缘情况都有测试
 - [ ] 错误处理逻辑被覆盖
 - [ ] 条件分支的 true/false 都有测试
@@ -325,5 +329,4 @@ mockDB.setSingleRecord('SELECT * FROM tenants WHERE id = ?', {
 
 ---
 
-**最后更新**: 2026-03-12
-**维护者**: Geekron CMS Team
+**最后更新**: 2026-03-12 **维护者**: Geekron CMS Team

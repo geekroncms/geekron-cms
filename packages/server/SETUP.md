@@ -3,6 +3,7 @@
 ## Prerequisites
 
 ### Option 1: Bun (Recommended)
+
 ```bash
 # Install Bun
 curl -fsSL https://bun.sh/install | bash
@@ -12,6 +13,7 @@ bun --version
 ```
 
 ### Option 2: Node.js + npm
+
 ```bash
 # Node.js 18+ required
 node --version  # Should be v18 or higher
@@ -21,12 +23,14 @@ npm --version
 ## Installation
 
 ### With Bun
+
 ```bash
 cd packages/server
 bun install
 ```
 
 ### With npm
+
 ```bash
 cd packages/server
 npm install
@@ -75,18 +79,21 @@ wrangler d1 execute geekron-cms --local
 ## Running the Server
 
 ### Development Mode (Bun)
+
 ```bash
 # Hot reload enabled
 bun run dev
 ```
 
 ### Development Mode (Wrangler)
+
 ```bash
 # Cloudflare Workers local environment
 wrangler dev
 ```
 
 ### Production Build
+
 ```bash
 # Build for deployment
 bun run build
@@ -111,6 +118,7 @@ bun test --verbose
 ## Testing API Endpoints
 
 ### 1. Register a User
+
 ```bash
 curl -X POST http://localhost:3000/api/v1/auth/register \
   -H "Content-Type: application/json" \
@@ -122,6 +130,7 @@ curl -X POST http://localhost:3000/api/v1/auth/register \
 ```
 
 ### 2. Login
+
 ```bash
 curl -X POST http://localhost:3000/api/v1/auth/login \
   -H "Content-Type: application/json" \
@@ -134,12 +143,14 @@ curl -X POST http://localhost:3000/api/v1/auth/login \
 Save the returned `token` for subsequent requests.
 
 ### 3. Get Current User
+
 ```bash
 curl -X GET http://localhost:3000/api/v1/auth/me \
   -H "Authorization: Bearer YOUR_TOKEN_HERE"
 ```
 
 ### 4. Create a Collection
+
 ```bash
 curl -X POST http://localhost:3000/api/v1/collections \
   -H "Authorization: Bearer YOUR_TOKEN_HERE" \
@@ -164,6 +175,7 @@ curl -X POST http://localhost:3000/api/v1/collections \
 ```
 
 ### 5. Create Data Entry
+
 ```bash
 curl -X POST http://localhost:3000/api/v1/data \
   -H "Authorization: Bearer YOUR_TOKEN_HERE" \
@@ -178,6 +190,7 @@ curl -X POST http://localhost:3000/api/v1/data \
 ```
 
 ### 6. Upload a File
+
 ```bash
 curl -X POST "http://localhost:3000/api/v1/files/upload?folder=articles" \
   -H "Authorization: Bearer YOUR_TOKEN_HERE" \
@@ -185,6 +198,7 @@ curl -X POST "http://localhost:3000/api/v1/files/upload?folder=articles" \
 ```
 
 ### 7. Create API Key
+
 ```bash
 curl -X POST http://localhost:3000/api/v1/api-keys \
   -H "Authorization: Bearer YOUR_TOKEN_HERE" \
@@ -199,6 +213,7 @@ curl -X POST http://localhost:3000/api/v1/api-keys \
 Save the returned API key - it won't be shown again!
 
 ### 8. Use API Key for Authentication
+
 ```bash
 curl -X GET http://localhost:3000/api/v1/collections \
   -H "X-API-Key: gk_your-api-key-here"
@@ -207,6 +222,7 @@ curl -X GET http://localhost:3000/api/v1/collections \
 ## Troubleshooting
 
 ### Port Already in Use
+
 ```bash
 # Find process using port 3000
 lsof -i :3000
@@ -216,6 +232,7 @@ kill -9 <PID>
 ```
 
 ### Module Resolution Errors
+
 ```bash
 # Clear node_modules and reinstall
 rm -rf node_modules
@@ -223,6 +240,7 @@ bun install
 ```
 
 ### Database Migration Errors
+
 ```bash
 # Drop and recreate local database
 rm -rf .data
@@ -231,6 +249,7 @@ bun run db:migrate
 ```
 
 ### TypeScript Errors
+
 ```bash
 # Check TypeScript configuration
 bun tsc --noEmit
@@ -243,16 +262,19 @@ bun tsc --noEmit
 ### Cloudflare Workers
 
 1. Install Wrangler CLI:
+
 ```bash
 npm install -g wrangler
 ```
 
 2. Login to Cloudflare:
+
 ```bash
 wrangler login
 ```
 
 3. Configure `wrangler.toml`:
+
 ```toml
 name = "geekron-cms-server"
 main = "src/index.ts"
@@ -272,6 +294,7 @@ bucket_name = "geekron-cms-files"
 ```
 
 4. Deploy:
+
 ```bash
 wrangler deploy
 ```
@@ -279,6 +302,7 @@ wrangler deploy
 ### Environment Variables in Production
 
 Set these in Cloudflare Dashboard or via Wrangler:
+
 ```bash
 wrangler secret put JWT_SECRET
 wrangler secret put SUPABASE_KEY

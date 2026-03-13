@@ -51,18 +51,21 @@ packages/admin/
 ## 功能模块
 
 ### 1. 认证模块
+
 - 登录/登出
 - Token 管理
 - 路由守卫
 - 权限控制
 
 ### 2. 数据模型管理
+
 - 模型列表（卡片视图）
 - 创建/删除模型
 - 字段管理
 - 字段类型支持：文本、数字、布尔、日期、邮箱、链接、多行文本、JSON、关联
 
 ### 3. 用户管理
+
 - 用户列表（表格视图）
 - 搜索和筛选
 - 添加/编辑/删除用户
@@ -70,6 +73,7 @@ packages/admin/
 - 状态管理（活跃、未激活、已禁用）
 
 ### 4. 系统设置
+
 - 基本信息配置
 - 外观设置（Logo、主题色）
 - 功能开关
@@ -77,6 +81,7 @@ packages/admin/
 - 危险操作（删除租户）
 
 ### 5. 仪表盘
+
 - 数据统计卡片
 - 快速操作入口
 - 最近活动记录
@@ -117,6 +122,7 @@ cp .env.example .env
 ```
 
 配置项：
+
 - `VITE_API_URL`: API 服务器地址（默认：http://localhost:8787/api/v1）
 - `VITE_APP_NAME`: 应用名称
 - `VITE_APP_VERSION`: 应用版本
@@ -126,10 +132,10 @@ cp .env.example .env
 ### BaseButton
 
 ```vue
-<BaseButton 
-  type="primary" 
-  size="medium" 
-  label="提交" 
+<BaseButton
+  type="primary"
+  size="medium"
+  label="提交"
   :loading="false"
   @click="handleSubmit"
 />
@@ -138,8 +144,8 @@ cp .env.example .env
 ### BaseForm
 
 ```vue
-<BaseForm 
-  v-model="formData" 
+<BaseForm
+  v-model="formData"
   :fields="[
     { key: 'name', label: '名称', type: 'text', required: true },
     { key: 'email', label: '邮箱', type: 'email' },
@@ -151,11 +157,7 @@ cp .env.example .env
 ### BaseModal
 
 ```vue
-<BaseModal 
-  v-model="showModal" 
-  title="标题" 
-  size="medium"
->
+<BaseModal v-model="showModal" title="标题" size="medium">
   <p>内容</p>
   <template #footer>
     <BaseButton @click="showModal = false">取消</BaseButton>
@@ -171,7 +173,7 @@ cp .env.example .env
   :data="users"
   :columns="[
     { key: 'name', title: '姓名' },
-    { key: 'email', title: '邮箱' }
+    { key: 'email', title: '邮箱' },
   ]"
   row-key="id"
 >
@@ -184,25 +186,25 @@ cp .env.example .env
 ## API 调用
 
 ```typescript
-import { collectionApi, userApi, authApi } from '@/api';
+import { collectionApi, userApi, authApi } from '@/api'
 
 // 认证
-await authApi.login(email, password);
-await authApi.me();
+await authApi.login(email, password)
+await authApi.me()
 
 // 数据模型
-await collectionApi.list();
-await collectionApi.get(id);
-await collectionApi.create(data);
-await collectionApi.update(id, data);
-await collectionApi.delete(id);
-await collectionApi.updateFields(id, fields);
+await collectionApi.list()
+await collectionApi.get(id)
+await collectionApi.create(data)
+await collectionApi.update(id, data)
+await collectionApi.delete(id)
+await collectionApi.updateFields(id, fields)
 
 // 用户
-await userApi.list();
-await userApi.create(data);
-await userApi.update(id, data);
-await userApi.delete(id);
+await userApi.list()
+await userApi.create(data)
+await userApi.update(id, data)
+await userApi.delete(id)
 ```
 
 ## 路由配置
@@ -212,7 +214,7 @@ await userApi.delete(id);
   path: '/collections',
   name: 'Collections',
   component: () => import('../views/Collections.vue'),
-  meta: { 
+  meta: {
     requiresAuth: true,  // 需要认证
     title: '数据模型',    // 页面标题
     permission: 'admin'   // 权限要求

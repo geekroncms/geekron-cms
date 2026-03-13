@@ -1,13 +1,13 @@
-import { Context, Next } from 'hono';
-import { hasPermission } from './api-key-auth';
+import { Context, Next } from 'hono'
+import { hasPermission } from './api-key-auth'
 
 /**
  * 权限检查中间件
- * 
+ *
  * 检查用户/API Key 是否有指定权限
  * 支持权限组合检查（OR/AND）
  * 无权限时返回 403 Forbidden
- * 
+ *
  * 用法：
  * - 单个权限：permissionsMiddleware(['read'])
  * - 多个权限（OR）：permissionsMiddleware(['read', 'write'], 'OR')
@@ -15,45 +15,48 @@ import { hasPermission } from './api-key-auth';
  */
 export function permissionsMiddleware(
   requiredPermissions: string | string[],
-  mode: 'AND' | 'OR' = 'OR'
+  mode: 'AND' | 'OR' = 'OR',
 ) {
   return async (c: Context, next: Next) => {
-    const permissions = c.get('permissions') || [];
-    const role = c.get('role');
-    const authMethod = c.get('authMethod') || 'jwt';
+    const permissions = c.get('permissions') || []
+    const role = c.get('role')
+    const authMethod = c.get('authMethod') || 'jwt'
 
     // 管理员角色拥有所有权限
     if (role === 'admin' || role === 'owner') {
-      await next();
-      return;
+      await next()
+      return
     }
 
     // API Key 的 admin 权限
     if (authMethod === 'api_key' && permissions.includes('admin')) {
-      await next();
-      return;
+      await next()
+      return
     }
 
     // 标准化权限列表
-    const requiredList = Array.isArray(requiredPermissions) 
-      ? requiredPermissions 
-      : [requiredPermissions];
+    const requiredList = Array.isArray(requiredPermissions)
+      ? requiredPermissions
+      : [requiredPermissions]
 
     // 检查权限
-    const hasAccess = hasPermission(requiredList, permissions, mode);
+    const hasAccess = hasPermission(requiredList, permissions, mode)
 
     if (!hasAccess) {
-      return c.json({
-        error: 'INSUFFICIENT_PERMISSIONS',
-        message: `Required permissions: ${requiredList.join(', ')}`,
-        required: requiredList,
-        mode,
-        available: permissions,
-      }, 403);
+      return c.json(
+        {
+          error: 'INSUFFICIENT_PERMISSIONS',
+          message: `Required permissions: ${requiredList.join(', ')}`,
+          required: requiredList,
+          mode,
+          available: permissions,
+        },
+        403,
+      )
     }
 
-    await next();
-  };
+    await next()
+  }
 }
 
 /**
@@ -63,28 +66,28 @@ export function permissionsMiddleware(
 export function checkPermissions(
   c: Context,
   requiredPermissions: string | string[],
-  mode: 'AND' | 'OR' = 'OR'
+  mode: 'AND' | 'OR' = 'OR',
 ): { hasAccess: boolean; missing?: string[] } {
-  const permissions = c.get('permissions') || [];
-  const role = c.get('role');
+  const permissions = c.get('permissions') || []
+  const role = c.get('role')
 
   // 管理员角色拥有所有权限
   if (role === 'admin' || role === 'owner') {
-    return { hasAccess: true };
+    return { hasAccess: true }
   }
 
-  const requiredList = Array.isArray(requiredPermissions) 
-    ? requiredPermissions 
-    : [requiredPermissions];
+  const requiredList = Array.isArray(requiredPermissions)
+    ? requiredPermissions
+    : [requiredPermissions]
 
-  const hasAccess = hasPermission(requiredList, permissions, mode);
+  const hasAccess = hasPermission(requiredList, permissions, mode)
 
   if (!hasAccess) {
-    const missing = requiredList.filter(p => !permissions.includes(p));
-    return { hasAccess: false, missing };
+    const missing = requiredList.filter((p) => !permissions.includes(p))
+    return { hasAccess: false, missing }
   }
 
-  return { hasAccess: true };
+  return { hasAccess: true }
 }
 
 /**
@@ -96,14 +99,14 @@ export const rolePermissions: Record<string, string[]> = {
   admin: ['read', 'write', 'delete', 'admin'],
   editor: ['read', 'write'],
   viewer: ['read'],
-};
+}
 
 /**
  * 检查角色是否有权限
  */
 export function hasRolePermission(role: string, permission: string): boolean {
-  const rolePerms = rolePermissions[role] || [];
-  return rolePerms.includes(permission);
+  const rolePerms = rolePermissions[role] || []
+  return rolePerms.includes(permission)
 }
 
 /**
@@ -112,28 +115,31 @@ export function hasRolePermission(role: string, permission: string): boolean {
  */
 export function dynamicPermissionsMiddleware(
   resourceType: string,
-  operation: 'read' | 'write' | 'delete' | 'admin'
+  operation: 'read' | 'write' | 'delete' | 'admin',
 ) {
   return async (c: Context, next: Next) => {
-    const permissions = c.get('permissions') || [];
-    const role = c.get('role');
+    const permissions = c.get('permissions') || []
+    const role = c.get('role')
 
     // 管理员拥有所有权限
     if (role === 'admin' || role === 'owner') {
-      await next();
-      return;
+      await next()
+      return
     }
 
     // 检查是否有对应操作的权限
     if (!permissions.includes(operation) && !permissions.includes('admin')) {
-      return c.json({
-        error: 'INSUFFICIENT_PERMISSIONS',
-        message: `Permission '${operation}' required for ${resourceType}`,
-        resource: resourceType,
-        operation,
-      }, 403);
+      return c.json(
+        {
+          error: 'INSUFFICIENT_PERMISSIONS',
+          message: `Permission '${operation}' required for ${resourceType}`,
+          resource: resourceType,
+          operation,
+        },
+        403,
+      )
     }
 
-    await next();
-  };
+    await next()
+  }
 }

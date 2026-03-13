@@ -6,17 +6,18 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted } from 'vue';
-import { useAuthStore } from '@/stores/auth';
-import { AppLayout } from '@/components';
+import { onMounted } from 'vue'
 
-const authStore = useAuthStore();
+import { AppLayout } from '@/components'
+import { useAuthStore } from '@/stores/auth'
+
+const authStore = useAuthStore()
 
 onMounted(async () => {
   if (authStore.isAuthenticated) {
-    await authStore.fetchUser();
+    await authStore.fetchUser()
   }
-});
+})
 </script>
 
 <style>
@@ -32,7 +33,8 @@ onMounted(async () => {
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   background: #f5f7fa;

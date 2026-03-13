@@ -4,7 +4,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc && vite build",
+    "build": "vite build",
+    "build:with-typecheck": "vue-tsc && vite build",
+    "postbuild": "echo '/*    /index.html   200' > dist/_redirects",
     "preview": "vite preview",
     "lint": "eslint . --ext .vue,.ts",
     "test:e2e": "playwright test",

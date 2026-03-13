@@ -6,7 +6,7 @@
     "dev": "vite",
     "build": "vite build",
     "build:with-typecheck": "vue-tsc && vite build",
-    "postbuild": "printf '# Cloudflare Pages SPA routing\\n/assets/* /assets/:splat 200\\n/* /index.html 200\\n' > dist/_redirects",
+    "postbuild": "printf '# Cloudflare Pages SPA routing\\n/assets/* /assets/:splat 200\\n/*.js /*.js 200\\n/*.css /*.css 200\\n/*.png /*.png 200\\n/*.svg /*.svg 200\\n/*.ico /*.ico 200\\n/*.woff* /*.woff* 200\\n/* /index.html 200\\n' > dist/_redirects",
     "preview": "vite preview",
     "lint": "eslint . --ext .vue,.ts",
     "test:e2e": "playwright test",

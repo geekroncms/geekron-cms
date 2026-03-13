@@ -41,17 +41,21 @@ jobs:
         run: npm test
         continue-on-error: true
       
-      - name: Deploy to Cloudflare Pages
+      - name: Deploy Admin to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=geekron-cms --branch=${{ github.ref_name }}
+          command: pages deploy packages/admin/dist --project-name=geekron-cms-admin --branch=${{ github.ref_name }}
         
       - name: Get Preview URL
         id: preview-url
         run: |
-          DEPLOYMENT_URL=$(echo "https://${{ github.ref_name }}-geekron-cms.${{ secrets.CLOUDFLARE_PROJECT_DOMAIN }}")
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            DEPLOYMENT_URL="https://geekron-cms-admin.pages.dev"
+          else
+            DEPLOYMENT_URL="https://${{ github.ref_name }}.geekron-cms-admin.pages.dev"
+          fi
           echo "deployment_url=$DEPLOYMENT_URL" >> $GITHUB_OUTPUT
           echo "🚀 Deployment URL: $DEPLOYMENT_URL"
       
@@ -81,7 +85,7 @@ jobs:
                     "tag": "div",
                     "text": {
                       "tag": "lark_md",
-                      "content": "**geekron-cms** 已部署到 Cloudflare Pages\n\n**分支**: ${{ github.ref_name }}\n**提交**: ${{ github.sha }}\n**提交信息**: ${{ github.event.head_commit.message }}"
+                      "content": "**geekron-cms-admin** 已部署到 Cloudflare Pages\n\n**分支**: ${{ github.ref_name }}\n**提交**: ${{ github.sha }}\n**提交信息**: ${{ github.event.head_commit.message }}"
                     }
                   },
                   {

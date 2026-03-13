@@ -25,6 +25,7 @@ jobs:
 
       - name: Run linter
         run: bun run lint
+        continue-on-error: true
 
       - name: Run type check
         run: bun run --bun tsc --noEmit

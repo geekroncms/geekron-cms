@@ -7,6 +7,7 @@ import { createLogger } from './utils/logger'
 const logger = createLogger('Server')
 
 import { apiKeyAuthMiddleware } from './middleware/api-key-auth'
+import { autoVersionMiddleware } from './middleware/auto-version'
 import { quotaCheckMiddleware } from './middleware/quota-check'
 import { rateLimitMiddleware } from './middleware/rate-limit'
 import { tenantMiddleware } from './middleware/tenant'
@@ -21,6 +22,9 @@ import { metadataRoutes } from './routes/metadata'
 import { quotaRoutes } from './routes/quotas'
 import { tenantRoutes } from './routes/tenants'
 import { userRoutes } from './routes/users'
+import { versionRoutes } from './routes/versions'
+import { workflowRoutes } from './routes/workflow'
+import { notificationRoutes } from './routes/notifications'
 import { dynamicCrudRoutes } from './services/dynamic-crud'
 import { ApiError } from './utils/errors'
 
@@ -83,6 +87,7 @@ protectedApi.use('/*', tenantMiddleware)
 protectedApi.use('/*', tenantIsolationMiddleware)
 protectedApi.use('/*', rateLimitMiddleware)
 protectedApi.use('/*', quotaCheckMiddleware)
+protectedApi.use('/data/*', autoVersionMiddleware) // Auto version control for content changes
 
 // Register protected routes
 protectedApi.route('/tenants', tenantRoutes)
@@ -94,6 +99,9 @@ protectedApi.route('/files', fileRoutes)
 protectedApi.route('/api-keys', apiKeysRoutes)
 protectedApi.route('/quotas', quotaRoutes)
 protectedApi.route('/metadata', metadataRoutes) // Phase 3: Metadata Management
+protectedApi.route('/workflow', workflowRoutes) // Phase 2: Workflow Engine
+protectedApi.route('/versions', versionRoutes) // Version control system
+protectedApi.route('/notifications', notificationRoutes) // Phase 2: Notifications
 
 // Mount protected routes
 api.route('/', protectedApi)

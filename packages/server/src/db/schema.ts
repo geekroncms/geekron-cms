@@ -197,11 +197,38 @@ export const files = sqliteTable(
     size: integer('size').notNull(),
     r2Key: text('r2_key'),
     checksum: text('checksum'),
+    uploadedBy: text('uploaded_by'),
+    folder: text('folder').default('uploads'),
     createdAt: text('created_at').notNull(),
+    updatedAt: text('updated_at'),
   },
   (table) => ({
     idxTenant: index('idx_files_tenant').on(table.tenantId),
     idxMimeType: index('idx_files_mime_type').on(table.mimeType),
+    idxFolder: index('idx_files_folder').on(table.folder),
     idxCreated: index('idx_files_created').on(table.createdAt),
+  }),
+)
+
+// 文件变换表（缩略图、裁剪、优化等）
+export const fileTransforms = sqliteTable(
+  'file_transforms',
+  {
+    id: text('id').primaryKey(),
+    tenantId: text('tenant_id').notNull(),
+    sourceFileId: text('source_file_id').notNull(),
+    r2Key: text('r2_key').notNull(),
+    operations: text('operations', { mode: 'json' }),
+    format: text('format'),
+    quality: integer('quality'),
+    width: integer('width'),
+    height: integer('height'),
+    size: integer('size'),
+    createdAt: text('created_at').notNull(),
+  },
+  (table) => ({
+    idxTenant: index('idx_file_transforms_tenant').on(table.tenantId),
+    idxSource: index('idx_file_transforms_source').on(table.sourceFileId),
+    idxCreated: index('idx_file_transforms_created').on(table.createdAt),
   }),
 )

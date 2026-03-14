@@ -24,9 +24,10 @@
         <button
           class="btn btn-primary"
           data-testid="save-settings-btn"
+          :disabled="saving"
           @click="saveSettings"
         >
-          保存设置
+          {{ saving ? '保存中...' : '保存设置' }}
         </button>
       </div>
 
@@ -66,23 +67,69 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 
+import { api } from '@/api'
 import { AppLayout } from '@/components'
 
-const tenant = ref({ name: '我的租户', plan: 'pro' })
-const quotaUsage = ref({
-  apiPercent: 45,
-  apiUsed: 450,
+interface Tenant {
+  name: string
+  plan: string
+}
+
+interface QuotaUsage {
+  apiPercent: number
+  apiUsed: number
+  apiLimit: number
+  storagePercent: number
+  storageUsed: string
+  storageLimit: string
+}
+
+const tenant = ref<Tenant>({ name: '', plan: 'free' })
+const quotaUsage = ref<QuotaUsage>({
+  apiPercent: 0,
+  apiUsed: 0,
   apiLimit: 1000,
-  storagePercent: 30,
-  storageUsed: '3GB',
+  storagePercent: 0,
+  storageUsed: '0GB',
   storageLimit: '10GB',
 })
+const saving = ref(false)
 
-const saveSettings = () => {
-  alert('设置已保存')
+const fetchSettings = async () => {
+  try {
+    const [tenantRes, quotaRes] = await Promise.all([
+      api.get<Tenant>('/settings/tenant'),
+      api.get<QuotaUsage>('/settings/quota'),
+    ])
+    tenant.value = tenantRes.data
+    quotaUsage.value = quotaRes.data
+  } catch (error) {
+    console.error('获取设置失败:', error)
+  }
 }
+
+const saveSettings = async () => {
+  if (!tenant.value.name || tenant.value.name.trim() === '') {
+    alert('请输入租户名称')
+    return
+  }
+  saving.value = true
+  try {
+    await api.put('/settings/tenant', tenant.value)
+    alert('设置已保存')
+  } catch (error) {
+    console.error('保存设置失败:', error)
+    alert('保存失败，请稍后重试')
+  } finally {
+    saving.value = false
+  }
+}
+
+onMounted(() => {
+  fetchSettings()
+})
 </script>
 
 <style scoped>

@@ -1,0 +1,389 @@
+<template>
+  <div class="workflow-actions">
+    <!-- 当前状态 -->
+    <div class="current-state">
+      <span class="label">当前状态:</span>
+      <span class="state-badge" :style="{ backgroundColor: stateColor }">
+        {{ stateName }}
+      </span>
+    </div>
+
+    <!-- 可用动作 -->
+    <div class="actions">
+      <button
+        v-for="action in availableActions"
+        :key="action.action"
+        @click="executeAction(action)"
+        class="btn-action"
+        :style="{ backgroundColor: actionColor(action.action) }"
+      >
+        {{ actionDescription(action) }}
+      </button>
+    </div>
+
+    <!-- 评论输入 -->
+    <div v-if="showComment" class="comment-section">
+      <textarea
+        v-model="comment"
+        placeholder="添加评论（可选）..."
+        class="comment-input"
+        rows="3"
+      ></textarea>
+      <div class="comment-actions">
+        <button @click="cancelAction" class="btn-cancel">取消</button>
+        <button @click="confirmAction" class="btn-confirm">确认</button>
+      </div>
+    </div>
+
+    <!-- 历史记录 -->
+    <div v-if="showHistory && history.length > 0" class="history-section">
+      <h4 class="history-title">工作流历史</h4>
+      <div class="history-list">
+        <div v-for="item in history" :key="item.id" class="history-item">
+          <div class="history-header">
+            <span class="history-action">{{ item.action }}</span>
+            <span class="history-time">{{ formatTime(item.createdAt) }}</span>
+          </div>
+          <div class="history-detail">
+            <span class="state-change">{{ item.fromState }} → {{ item.toState }}</span>
+            <span v-if="item.comment" class="history-comment">"{{ item.comment }}"</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue'
+import {
+  getAvailableActions,
+  executeWorkflowAction,
+  getWorkflowHistory,
+  getWorkflowConfig,
+} from '../../api/workflow'
+
+interface WorkflowTransition {
+  from: string
+  to: string
+  action: string
+  description?: string
+}
+
+interface WorkflowHistory {
+  id: string
+  contentId: string
+  fromState: string
+  toState: string
+  action: string
+  comment?: string
+  userId: string
+  createdAt: string
+}
+
+const props = defineProps<{
+  collectionId: string
+  contentId: string
+  currentStatus?: string
+}>()
+
+const emit = defineEmits<{
+  (e: 'status-change', status: string): void
+}>()
+
+const loading = ref(true)
+const availableActions = ref<WorkflowTransition[]>([])
+const history = ref<WorkflowHistory[]>([])
+const workflowConfig = ref<any>(null)
+const showComment = ref(false)
+const selectedAction = ref<WorkflowTransition | null>(null)
+const comment = ref('')
+
+// 当前状态
+const currentState = computed(() => props.currentStatus || 'draft')
+
+const stateName = computed(() => {
+  if (!workflowConfig.value) {
+    return getDefaultStateName(currentState.value)
+  }
+  const state = workflowConfig.value.states.find((s: any) => s.id === currentState.value)
+  return state?.name || currentState.value
+})
+
+const stateColor = computed(() => {
+  if (!workflowConfig.value) {
+    return getDefaultStateColor(currentState.value)
+  }
+  const state = workflowConfig.value.states.find((s: any) => s.id === currentState.value)
+  return state?.color || '#6b7280'
+})
+
+// 加载工作流信息
+async function loadWorkflowInfo() {
+  loading.value = true
+  try {
+    const [actions, historyData, config] = await Promise.all([
+      getAvailableActions(props.collectionId, props.contentId),
+      getWorkflowHistory(props.collectionId, props.contentId),
+      getWorkflowConfig(props.collectionId),
+    ])
+    availableActions.value = actions.availableActions
+    history.value = historyData
+    workflowConfig.value = config
+  } catch (e: any) {
+    console.error('加载工作流信息失败:', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 执行动作
+function executeAction(action: WorkflowTransition) {
+  selectedAction.value = action
+  showComment.value = true
+  comment.value = ''
+}
+
+// 确认动作
+async function confirmAction() {
+  if (!selectedAction.value) return
+
+  try {
+    await executeWorkflowAction(props.collectionId, props.contentId, {
+      action: selectedAction.value.action,
+      comment: comment.value || undefined,
+    })
+    emit('status-change', selectedAction.value.to)
+    showComment.value = false
+    selectedAction.value = null
+    // 重新加载
+    await loadWorkflowInfo()
+  } catch (e: any) {
+    alert('操作失败：' + (e.message || '未知错误'))
+  }
+}
+
+// 取消动作
+function cancelAction() {
+  showComment.value = false
+  selectedAction.value = null
+  comment.value = ''
+}
+
+// 动作描述
+function actionDescription(action: WorkflowTransition): string {
+  if (action.description) return action.description
+  const actionMap: Record<string, string> = {
+    submit: '提交审核',
+    approve: '审核通过',
+    reject: '拒绝',
+    archive: '归档',
+    restore: '恢复',
+  }
+  return actionMap[action.action] || action.action
+}
+
+// 动作颜色
+function actionColor(action: string): string {
+  const colorMap: Record<string, string> = {
+    submit: '#667eea',
+    approve: '#48bb78',
+    reject: '#f56565',
+    archive: '#4299e1',
+    restore: '#ed8936',
+  }
+  return colorMap[action] || '#6b7280'
+}
+
+// 格式化时间
+function formatTime(dateString: string): string {
+  const date = new Date(dateString)
+  return date.toLocaleString('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
+
+// 默认状态名称
+function getDefaultStateName(stateId: string): string {
+  const names: Record<string, string> = {
+    draft: '草稿',
+    pending: '待审核',
+    published: '已发布',
+    archived: '已归档',
+  }
+  return names[stateId] || stateId
+}
+
+// 默认状态颜色
+function getDefaultStateColor(stateId: string): string {
+  const colors: Record<string, string> = {
+    draft: 'gray',
+    pending: 'yellow',
+    published: 'green',
+    archived: 'blue',
+  }
+  return colors[stateId] || '#6b7280'
+}
+
+// 监听状态变化
+watch(() => props.currentStatus, loadWorkflowInfo)
+
+onMounted(() => {
+  loadWorkflowInfo()
+})
+</script>
+
+<style scoped>
+.workflow-actions {
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 8px;
+}
+
+.current-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.label {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.state-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: white;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.btn-action {
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.comment-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.comment-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.comment-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.btn-cancel {
+  background: white;
+  border: 1px solid #d1d5db;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-confirm {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 6px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.history-section {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.history-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 12px 0;
+}
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.history-item {
+  padding: 12px;
+  background: white;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.history-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.history-action {
+  font-weight: 600;
+  color: #111827;
+  text-transform: capitalize;
+}
+
+.history-time {
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.history-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.state-change {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.history-comment {
+  font-size: 13px;
+  color: #6b7280;
+  font-style: italic;
+}
+</style>

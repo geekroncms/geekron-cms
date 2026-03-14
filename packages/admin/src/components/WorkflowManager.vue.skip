@@ -1,0 +1,658 @@
+<template>
+  <div class="workflow-management">
+    <div class="header">
+      <h1 class="title">工作流管理</h1>
+      <p class="subtitle">配置内容审核流程和状态转换</p>
+    </div>
+
+    <!-- 加载状态 -->
+    <div v-if="loading" class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>加载中...</p>
+    </div>
+
+    <!-- 错误状态 -->
+    <div v-else-if="error" class="error-container">
+      <p class="error-text">{{ error }}</p>
+      <button @click="loadWorkflow" class="btn-retry">重试</button>
+    </div>
+
+    <!-- 工作流配置 -->
+    <div v-else class="content">
+      <!-- 工作流状态列表 -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">工作流状态</h2>
+          <button @click="addState" class="btn-primary">添加状态</button>
+        </div>
+        <div class="states-list">
+          <div
+            v-for="(state, index) in workflow.states"
+            :key="state.id"
+            class="state-item"
+            :style="{ borderLeftColor: state.color }"
+          >
+            <div class="state-info">
+              <span class="state-name">{{ state.name }}</span>
+              <span class="state-id">{{ state.id }}</span>
+              <span v-if="state.description" class="state-desc">{{ state.description }}</span>
+            </div>
+            <div class="state-actions">
+              <button @click="editState(index)" class="btn-icon">✏️</button>
+              <button @click="removeState(index)" class="btn-icon danger">🗑️</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 工作流转换 -->
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">状态转换</h2>
+          <button @click="addTransition" class="btn-primary">添加转换</button>
+        </div>
+        <div class="transitions-list">
+          <div v-for="(transition, index) in workflow.transitions" :key="index" class="transition-item">
+            <div class="transition-flow">
+              <span class="state-badge">{{ transition.from }}</span>
+              <span class="arrow">→</span>
+              <span class="action-badge">{{ transition.action }}</span>
+              <span class="arrow">→</span>
+              <span class="state-badge">{{ transition.to }}</span>
+            </div>
+            <div v-if="transition.description" class="transition-desc">{{ transition.description }}</div>
+            <button @click="removeTransition(index)" class="btn-remove">移除</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div class="actions">
+        <button @click="resetToDefault" class="btn-secondary">恢复默认</button>
+        <button @click="saveWorkflow" :disabled="saving" class="btn-primary">
+          {{ saving ? '保存中...' : '保存配置' }}
+        </button>
+      </div>
+    </div>
+
+    <!-- 状态编辑弹窗 -->
+    <div v-if="showStateModal" class="modal-overlay" @click="closeStateModal">
+      <div class="modal" @click.stop>
+        <h3>{{ editingStateIndex !== null ? '编辑状态' : '添加状态' }}</h3>
+        <div class="form-group">
+          <label>ID</label>
+          <input v-model="currentState.id" type="text" class="input" placeholder="例如：draft" />
+        </div>
+        <div class="form-group">
+          <label>名称</label>
+          <input v-model="currentState.name" type="text" class="input" placeholder="例如：草稿" />
+        </div>
+        <div class="form-group">
+          <label>颜色</label>
+          <input v-model="currentState.color" type="color" class="input-color" />
+          <span class="color-preview" :style="{ backgroundColor: currentState.color }"></span>
+        </div>
+        <div class="form-group">
+          <label>描述</label>
+          <input v-model="currentState.description" type="text" class="input" placeholder="状态描述" />
+        </div>
+        <div class="modal-actions">
+          <button @click="closeStateModal" class="btn-secondary">取消</button>
+          <button @click="confirmState" class="btn-primary">确定</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 转换编辑弹窗 -->
+    <div v-if="showTransitionModal" class="modal-overlay" @click="closeTransitionModal">
+      <div class="modal" @click.stop>
+        <h3>添加状态转换</h3>
+        <div class="form-group">
+          <label>从状态</label>
+          <select v-model="currentTransition.from" class="input">
+            <option v-for="state in workflow.states" :key="state.id" :value="state.id">
+              {{ state.name }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>动作</label>
+          <input v-model="currentTransition.action" type="text" class="input" placeholder="例如：submit" />
+        </div>
+        <div class="form-group">
+          <label>到状态</label>
+          <select v-model="currentTransition.to" class="input">
+            <option v-for="state in workflow.states" :key="state.id" :value="state.id">
+              {{ state.name }}
+            </option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>描述</label>
+          <input v-model="currentTransition.description" type="text" class="input" placeholder="转换描述" />
+        </div>
+        <div class="modal-actions">
+          <button @click="closeTransitionModal" class="btn-secondary">取消</button>
+          <button @click="confirmTransition" class="btn-primary">确定</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, reactive, onMounted } from 'vue'
+import { workflowApi } from '../../api/workflow'
+const getWorkflowConfig = workflowApi.getConfig
+const saveWorkflowConfig = workflowApi.saveConfig
+
+interface WorkflowState {
+  id: string
+  name: string
+  color: string
+  description?: string
+}
+
+interface WorkflowTransition {
+  from: string
+  to: string
+  action: string
+  description?: string
+}
+
+const props = defineProps<{
+  collectionId: string
+}>()
+
+const loading = ref(true)
+const error = ref<string | null>(null)
+const saving = ref(false)
+const workflow = reactive({
+  states: [] as WorkflowState[],
+  transitions: [] as WorkflowTransition[],
+})
+
+// 状态编辑
+const showStateModal = ref(false)
+const editingStateIndex = ref<number | null>(null)
+const currentState = reactive<WorkflowState>({
+  id: '',
+  name: '',
+  color: '#667eea',
+  description: '',
+})
+
+// 转换编辑
+const showTransitionModal = ref(false)
+const currentTransition = reactive<WorkflowTransition>({
+  from: '',
+  action: '',
+  to: '',
+  description: '',
+})
+
+// 加载工作流配置
+async function loadWorkflow() {
+  loading.value = true
+  error.value = null
+  try {
+    const config = await getWorkflowConfig(props.collectionId)
+    workflow.states = config.states
+    workflow.transitions = config.transitions
+  } catch (e: any) {
+    error.value = e.message || '加载失败'
+  } finally {
+    loading.value = false
+  }
+}
+
+// 添加状态
+function addState() {
+  editingStateIndex.value = null
+  currentState.id = ''
+  currentState.name = ''
+  currentState.color = '#667eea'
+  currentState.description = ''
+  showStateModal.value = true
+}
+
+// 编辑状态
+function editState(index: number) {
+  editingStateIndex.value = index
+  const state = workflow.states[index]
+  currentState.id = state.id
+  currentState.name = state.name
+  currentState.color = state.color
+  currentState.description = state.description || ''
+  showStateModal.value = true
+}
+
+// 确认状态
+function confirmState() {
+  if (!currentState.id || !currentState.name) {
+    alert('请填写完整的状态信息')
+    return
+  }
+
+  if (editingStateIndex.value !== null) {
+    workflow.states[editingStateIndex.value] = { ...currentState }
+  } else {
+    workflow.states.push({ ...currentState })
+  }
+  closeStateModal()
+}
+
+// 关闭状态弹窗
+function closeStateModal() {
+  showStateModal.value = false
+  editingStateIndex.value = null
+}
+
+// 移除状态
+function removeState(index: number) {
+  if (confirm('确定要删除这个状态吗？相关的转换也会被删除。')) {
+    workflow.states.splice(index, 1)
+  }
+}
+
+// 添加转换
+function addTransition() {
+  if (workflow.states.length < 2) {
+    alert('至少需要两个状态才能创建转换')
+    return
+  }
+  currentTransition.from = workflow.states[0].id
+  currentTransition.to = workflow.states[1].id
+  currentTransition.action = ''
+  currentTransition.description = ''
+  showTransitionModal.value = true
+}
+
+// 确认转换
+function confirmTransition() {
+  if (!currentTransition.from || !currentTransition.to || !currentTransition.action) {
+    alert('请填写完整的转换信息')
+    return
+  }
+  workflow.transitions.push({ ...currentTransition })
+  closeTransitionModal()
+}
+
+// 关闭转换弹窗
+function closeTransitionModal() {
+  showTransitionModal.value = false
+}
+
+// 移除转换
+function removeTransition(index: number) {
+  workflow.transitions.splice(index, 1)
+}
+
+// 恢复默认工作流
+function resetToDefault() {
+  if (confirm('确定要恢复默认工作流配置吗？')) {
+    workflow.states = [
+      { id: 'draft', name: '草稿', color: 'gray', description: '内容正在编辑中' },
+      { id: 'pending', name: '待审核', color: 'yellow', description: '等待审核通过' },
+      { id: 'published', name: '已发布', color: 'green', description: '内容已发布' },
+      { id: 'archived', name: '已归档', color: 'blue', description: '内容已归档' },
+    ]
+    workflow.transitions = [
+      { from: 'draft', to: 'pending', action: 'submit', description: '提交审核' },
+      { from: 'pending', to: 'published', action: 'approve', description: '审核通过' },
+      { from: 'pending', to: 'draft', action: 'reject', description: '拒绝并返回草稿' },
+      { from: 'published', to: 'archived', action: 'archive', description: '归档内容' },
+      { from: 'archived', to: 'draft', action: 'restore', description: '恢复为草稿' },
+    ]
+  }
+}
+
+// 保存工作流配置
+async function saveWorkflow() {
+  if (workflow.states.length === 0) {
+    alert('至少需要一个状态')
+    return
+  }
+
+  saving.value = true
+  try {
+    await saveWorkflowConfig({
+      collectionId: props.collectionId,
+      states: workflow.states,
+      transitions: workflow.transitions,
+    })
+    alert('工作流配置已保存')
+  } catch (e: any) {
+    alert('保存失败：' + (e.message || '未知错误'))
+  } finally {
+    saving.value = false
+  }
+}
+
+onMounted(() => {
+  loadWorkflow()
+})
+</script>
+
+<style scoped>
+.workflow-management {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 32px;
+}
+
+.title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 8px 0;
+}
+
+.subtitle {
+  color: #6b7280;
+  margin: 0;
+}
+
+.loading-container,
+.error-container {
+  text-align: center;
+  padding: 64px 24px;
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e5e7eb;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 16px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.error-text {
+  color: #f56565;
+  margin-bottom: 16px;
+}
+
+.card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.states-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.state-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 6px;
+  border-left: 4px solid;
+}
+
+.state-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.state-name {
+  font-weight: 600;
+  color: #111827;
+}
+
+.state-id {
+  font-size: 12px;
+  color: #6b7280;
+  font-family: monospace;
+}
+
+.state-desc {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.state-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.btn-icon:hover {
+  background: #e5e7eb;
+}
+
+.btn-icon.danger:hover {
+  background: #fee2e2;
+}
+
+.transitions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.transition-item {
+  padding: 16px;
+  background: #f9fafb;
+  border-radius: 6px;
+}
+
+.transition-flow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.state-badge {
+  padding: 4px 12px;
+  background: #e5e7eb;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.action-badge {
+  padding: 4px 12px;
+  background: #667eea;
+  color: white;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.arrow {
+  color: #9ca3af;
+  font-size: 16px;
+}
+
+.transition-desc {
+  font-size: 13px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.btn-remove {
+  background: none;
+  border: 1px solid #e5e7eb;
+  padding: 4px 12px;
+  border-radius: 4px;
+  color: #6b7280;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btn-remove:hover {
+  background: #fee2e2;
+  border-color: #f56565;
+  color: #f56565;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background: #f9fafb;
+}
+
+.btn-retry {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background: white;
+  border-radius: 8px;
+  padding: 24px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal h3 {
+  margin: 0 0 24px 0;
+  font-size: 18px;
+  color: #111827;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.input-color {
+  width: 60px;
+  height: 36px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.color-preview {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  margin-left: 8px;
+  vertical-align: middle;
+  border: 1px solid #d1d5db;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+}
+</style>

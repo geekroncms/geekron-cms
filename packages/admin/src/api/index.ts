@@ -1,87 +1,91 @@
-import axios from 'axios'
+// API 客户端基础配置
+export { default as api } from './client'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8787/api/v1'
+// 认证模块
+export { authApi, login, logout, isAuthenticated, getToken, getTenantId, getUserId } from './auth'
+export type {
+  LoginRequest,
+  LoginResponse,
+  RegisterRequest,
+  RegisterResponse,
+  AuthMeResponse,
+  TenantsListResponse,
+  SwitchTenantRequest,
+  SwitchTenantResponse,
+} from './types'
 
-// 创建 axios 实例
-const api = axios.create({
-  baseURL: API_BASE_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-})
+// 租户管理模块
+export { tenantApi } from './tenants'
+export type {
+  Tenant,
+  CreateTenantRequest,
+  UpdateTenantRequest,
+  QuotasResponse,
+} from './types'
 
-// 请求拦截器 - 添加 Token
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token')
-  const tenantId = localStorage.getItem('tenantId')
+// 用户管理模块
+export { userApi } from './users'
+export type {
+  User,
+  CreateUserRequest,
+  UpdateUserRequest,
+  InviteUserRequest,
+  ChangePasswordRequest,
+  UsersListResponse,
+} from './types'
 
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`
-  }
+// 集合管理模块
+export { collectionApi } from './collections'
+export type {
+  Collection,
+  CreateCollectionRequest,
+  UpdateCollectionRequest,
+  AddFieldRequest,
+  CollectionsListResponse,
+  Field,
+  FieldType,
+} from './types'
 
-  if (tenantId) {
-    config.headers['X-Tenant-ID'] = tenantId
-  }
+// 数据管理模块
+export { dataApi } from './data'
+export type {
+  DataEntry,
+  CreateDataRequest,
+  UpdateDataRequest,
+  DataListResponse,
+  QueryParams,
+} from './types'
 
-  return config
-})
+// API Key 管理模块
+export { apiKeyApi } from './apiKeys'
+export type {
+  ApiKey,
+  CreateApiKeyRequest,
+  UpdateApiKeyRequest,
+  ApiKeysListResponse,
+  ValidateApiKeyRequest,
+  ValidateApiKeyResponse,
+  ApiKeyUsageResponse,
+  ApiKeyUsage,
+} from './types'
 
-// 响应拦截器 - 处理错误
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('tenantId')
-      window.location.href = '/login'
-    }
-    return Promise.reject(error)
-  },
-)
+// 配额管理模块
+export { quotaApi } from './quotas'
+export type {
+  QuotaStatusResponse,
+  ResetUsageRequest,
+  CheckQuotaResponse,
+  QuotaConfig,
+  UsageStats,
+} from './types'
 
-// API 方法
-export const authApi = {
-  login: (email: string, password: string) => api.post('/auth/login', { email, password }),
-
-  register: (email: string, password: string, name: string) =>
-    api.post('/auth/register', { email, password, name }),
-
-  me: () => api.get('/auth/me'),
-}
-
-export const tenantApi = {
-  getMe: () => api.get('/tenants/me'),
-  create: (data: any) => api.put('/tenants/me', data),
-  delete: () => api.delete('/tenants/me'),
-}
-
-export const collectionApi = {
-  list: () => api.get('/collections'),
-  get: (id: string) => api.get(`/collections/${id}`),
-  create: (data: any) => api.post('/collections', data),
-  update: (id: string, data: any) => api.put(`/collections/${id}`, data),
-  delete: (id: string) => api.delete(`/collections/${id}`),
-  updateFields: (id: string, fields: any[]) => api.put(`/collections/${id}/fields`, { fields }),
-}
-
-export const userApi = {
-  list: () => api.get('/users'),
-  get: (id: string) => api.get(`/users/${id}`),
-  create: (data: any) => api.post('/users', data),
-  update: (id: string, data: any) => api.put(`/users/${id}`, data),
-  delete: (id: string) => api.delete(`/users/${id}`),
-}
-
-export const contentApi = {
-  list: (collectionId: string, params?: any) =>
-    api.get(`/collections/${collectionId}/contents`, { params }),
-  get: (collectionId: string, id: string) => api.get(`/collections/${collectionId}/contents/${id}`),
-  create: (collectionId: string, data: any) =>
-    api.post(`/collections/${collectionId}/contents`, data),
-  update: (collectionId: string, id: string, data: any) =>
-    api.put(`/collections/${collectionId}/contents/${id}`, data),
-  delete: (collectionId: string, id: string) =>
-    api.delete(`/collections/${collectionId}/contents/${id}`),
-}
-
-export default api
+// 通用类型
+export type {
+  ApiResponse,
+  Pagination,
+  ApiError,
+  UserInfo,
+  TenantInfo,
+  TenantItem,
+  QuotaUsage,
+} from './types'

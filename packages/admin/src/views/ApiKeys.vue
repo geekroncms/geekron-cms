@@ -165,7 +165,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 
-import api from '@/api'
+import { api } from '@/api'
 import { AppLayout } from '@/components'
 
 interface ApiKey {
@@ -185,30 +185,41 @@ const fetchKeys = async () => {
   try {
     const response = await api.get<ApiKey[]>('/api-keys')
     keys.value = response.data
-  } catch {
-    loading.value = false
+  } catch (error) {
+    console.error('获取 API Keys 失败:', error)
   } finally {
     loading.value = false
   }
 }
 
 const createKey = async () => {
+  if (!newKey.value.name || newKey.value.name.trim() === '') {
+    alert('请输入 Key 名称')
+    return
+  }
+  if (newKey.value.permissions.length === 0) {
+    alert('请至少选择一个权限')
+    return
+  }
   try {
     const response = await api.post<ApiKey>('/api-keys', newKey.value)
     keys.value.unshift(response.data)
     showCreateModal.value = false
     newKey.value = { name: '', permissions: ['read'] }
-  } catch {
-    alert('创建失败')
+  } catch (error) {
+    console.error('创建 API Key 失败:', error)
+    alert('创建失败，请稍后重试')
   }
 }
 
 const copyKey = async (key: ApiKey) => {
   try {
-    await navigator.clipboard.writeText(key.key || 'gk_xxx')
+    const keyValue = key.key || 'gk_xxx'
+    await navigator.clipboard.writeText(keyValue)
     alert('已复制到剪贴板')
-  } catch {
-    alert('复制失败')
+  } catch (error) {
+    console.error('复制失败:', error)
+    alert('复制失败，请手动复制')
   }
 }
 
@@ -218,8 +229,9 @@ const rotateKey = async (key: ApiKey) => {
       const response = await api.post<ApiKey>(`/api-keys/${key.id}/rotate`)
       alert(`新 Key: ${response.data.key}\n请妥善保存！`)
       await fetchKeys()
-    } catch {
-      alert('轮换失败')
+    } catch (error) {
+      console.error('轮换 API Key 失败:', error)
+      alert('轮换失败，请稍后重试')
     }
   }
 }
@@ -229,8 +241,9 @@ const deleteKey = async (key: ApiKey) => {
     try {
       await api.delete(`/api-keys/${key.id}`)
       keys.value = keys.value.filter((k) => k.id !== key.id)
-    } catch {
-      alert('删除失败')
+    } catch (error) {
+      console.error('删除 API Key 失败:', error)
+      alert('删除失败，请稍后重试')
     }
   }
 }

@@ -1,0 +1,94 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - complementary [ref=e4]:
+    - generic [ref=e5]:
+      - generic [ref=e6]:
+        - generic [ref=e7]: 🦞
+        - generic [ref=e8]: Geekron CMS
+      - button "‹" [ref=e9] [cursor=pointer]:
+        - generic [ref=e10]: ‹
+    - navigation [ref=e11]:
+      - link "📊 仪表盘" [ref=e12] [cursor=pointer]:
+        - /url: /
+        - generic [ref=e13]: 📊
+        - generic [ref=e14]: 仪表盘
+      - link "📁 数据模型" [ref=e15] [cursor=pointer]:
+        - /url: /collections
+        - generic [ref=e16]: 📁
+        - generic [ref=e17]: 数据模型
+      - link "👥 用户管理" [ref=e18] [cursor=pointer]:
+        - /url: /users
+        - generic [ref=e19]: 👥
+        - generic [ref=e20]: 用户管理
+      - link "📄 文件管理" [ref=e21] [cursor=pointer]:
+        - /url: /files
+        - generic [ref=e22]: 📄
+        - generic [ref=e23]: 文件管理
+      - link "🔑 API Keys" [ref=e24] [cursor=pointer]:
+        - /url: /api-keys
+        - generic [ref=e25]: 🔑
+        - generic [ref=e26]: API Keys
+      - link "📈 配额管理" [ref=e27] [cursor=pointer]:
+        - /url: /quotas
+        - generic [ref=e28]: 📈
+        - generic [ref=e29]: 配额管理
+      - link "📋 元数据" [ref=e30] [cursor=pointer]:
+        - /url: /metadata
+        - generic [ref=e31]: 📋
+        - generic [ref=e32]: 元数据
+      - link "🔄 数据同步" [ref=e33] [cursor=pointer]:
+        - /url: /sync
+        - generic [ref=e34]: 🔄
+        - generic [ref=e35]: 数据同步
+      - link "🏢 租户管理" [ref=e36] [cursor=pointer]:
+        - /url: /tenants
+        - generic [ref=e37]: 🏢
+        - generic [ref=e38]: 租户管理
+      - link "⚙️ 设置" [ref=e39] [cursor=pointer]:
+        - /url: /settings
+        - generic [ref=e40]: ⚙️
+        - generic [ref=e41]: 设置
+    - button "🚪 退出登录" [ref=e43] [cursor=pointer]:
+      - generic [ref=e44]: 🚪
+      - generic [ref=e45]: 退出登录
+  - generic [ref=e46]:
+    - banner [ref=e47]:
+      - generic [ref=e49] [cursor=pointer]: 仪表盘
+    - main [ref=e50]:
+      - generic [ref=e51]:
+        - heading "仪表盘 Dashboard" [level=1] [ref=e52]
+        - generic [ref=e53]:
+          - generic [ref=e54]:
+            - heading "租户数量" [level=3] [ref=e55]
+            - paragraph [ref=e56]: "0"
+          - generic [ref=e57]:
+            - heading "用户数量" [level=3] [ref=e58]
+            - paragraph [ref=e59]: "0"
+          - generic [ref=e60]:
+            - heading "API 调用" [level=3] [ref=e61]
+            - paragraph [ref=e62]: "0"
+          - generic [ref=e63]:
+            - heading "存储空间" [level=3] [ref=e64]
+            - paragraph [ref=e65]: 0 GB
+        - generic [ref=e66]:
+          - heading "快速操作" [level=2] [ref=e67]
+          - generic [ref=e68]:
+            - link "📁 数据模型" [ref=e69] [cursor=pointer]:
+              - /url: /collections
+            - link "👥 用户管理" [ref=e70] [cursor=pointer]:
+              - /url: /users
+            - link "📄 文件管理" [ref=e71] [cursor=pointer]:
+              - /url: /files
+            - link "🔑 API Keys" [ref=e72] [cursor=pointer]:
+              - /url: /api-keys
+            - link "📈 配额管理" [ref=e73] [cursor=pointer]:
+              - /url: /quotas
+            - link "📋 元数据" [ref=e74] [cursor=pointer]:
+              - /url: /metadata
+            - link "🔄 数据同步" [ref=e75] [cursor=pointer]:
+              - /url: /sync
+            - link "🏢 租户管理" [ref=e76] [cursor=pointer]:
+              - /url: /tenants
+```

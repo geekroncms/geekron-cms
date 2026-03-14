@@ -1,17 +1,30 @@
 name = "geekron-cms-server"
 compatibility_date = "2024-01-01"
-main = "dist/server/index.js"
+main = "dist/server/index-simple.js"
 
 [vars]
 NODE_ENV = "production"
+JWT_SECRET = "geekron-cms-jwt-secret-key-2026-03-13-production"
+CLOUDFLARE_ACCOUNT_ID = "645d044b57cf108ea46a1850870a827a"
 
-# D1 Database (需要手动创建)
-# [[d1_databases]]
-# binding = "DB"
-# database_name = "geekron-cms-db"
-# database_id = "xxx"
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "geekron-cms-db"
+database_id = "e871acea-dbba-4ab4-9492-4d6b91f37d53"
 
-# R2 Bucket (需要手动创建)
-# [[r2_buckets]]
-# binding = "BUCKET"
-# bucket_name = "geekron-cms-files"
+# KV Namespace
+[[kv_namespaces]]
+binding = "CACHE"
+id = "194c2bd7d3234ebe96479fd661281b7c"
+
+# R2 Bucket
+[[r2_buckets]]
+binding = "BUCKET"
+bucket_name = "geekron-cms-files"
+
+# R2 Public Bucket (for CDN access)
+[[r2_buckets]]
+binding = "BUCKET_PUBLIC"
+bucket_name = "geekron-cms-files-public"
+preview_bucket_name = "geekron-cms-files-public-preview"

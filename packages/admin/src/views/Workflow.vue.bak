@@ -1,0 +1,223 @@
+<template>
+  <div class="workflow-page">
+    <div class="container">
+      <!-- 页面头部 -->
+      <div class="page-header">
+        <div class="breadcrumb">
+          <router-link to="/collections" class="breadcrumb-link">集合列表</router-link>
+          <span class="breadcrumb-separator">/</span>
+          <span class="breadcrumb-link">{{ collectionName }}</span>
+          <span class="breadcrumb-separator">/</span>
+          <span class="breadcrumb-current">工作流管理</span>
+        </div>
+        <h1 class="page-title">工作流管理</h1>
+        <p class="page-description">
+          配置内容审核流程，管理状态转换和审核规则
+        </p>
+      </div>
+
+      <!-- 集合选择 -->
+      <div v-if="!collectionId" class="collection-selector">
+        <div class="card">
+          <h2 class="card-title">选择集合</h2>
+          <p class="card-description">请选择要配置工作流的集合</p>
+          <select v-model="selectedCollection" class="select">
+            <option value="">-- 请选择集合 --</option>
+            <option v-for="collection in collections" :key="collection.id" :value="collection.id">
+              {{ collection.displayName }} ({{ collection.name }})
+            </option>
+          </select>
+          <button @click="goToWorkflow" class="btn-primary" :disabled="!selectedCollection">
+            进入工作流管理
+          </button>
+        </div>
+      </div>
+
+      <!-- 工作流管理器 -->
+      <WorkflowManager v-else :collectionId="collectionId" />
+
+      <!-- 返回按钮 -->
+      <div class="back-button">
+        <button @click="backToCollections" class="btn-secondary">← 返回集合列表</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import WorkflowManager from '../components/WorkflowManager.vue'
+import { getCollections } from '../api/collections'
+
+const router = useRouter()
+const route = useRoute()
+
+const collections = ref<any[]>([])
+const selectedCollection = ref('')
+const collectionName = ref('')
+
+const collectionId = computed(() => {
+  return route.query.collectionId as string
+})
+
+// 加载集合列表
+async function loadCollections() {
+  try {
+    const data = await getCollections()
+    collections.value = data
+  } catch (e: any) {
+    console.error('加载集合失败:', e)
+  }
+}
+
+// 跳转到工作流管理
+function goToWorkflow() {
+  if (selectedCollection.value) {
+    router.push({
+      name: 'workflow',
+      query: { collectionId: selectedCollection.value },
+    })
+  }
+}
+
+// 返回集合列表
+function backToCollections() {
+  router.push('/collections')
+}
+
+onMounted(() => {
+  loadCollections()
+})
+</script>
+
+<style scoped>
+.workflow-page {
+  min-height: 100vh;
+  background: #f9fafb;
+  padding: 24px;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 32px;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 16px;
+}
+
+.breadcrumb-link {
+  color: #667eea;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.breadcrumb-link:hover {
+  color: #5a67d8;
+  text-decoration: underline;
+}
+
+.breadcrumb-separator {
+  color: #d1d5db;
+}
+
+.breadcrumb-current {
+  color: #374151;
+}
+
+.page-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 8px 0;
+}
+
+.page-description {
+  color: #6b7280;
+  margin: 0;
+}
+
+.collection-selector {
+  margin-bottom: 32px;
+}
+
+.card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  padding: 24px;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 8px 0;
+}
+
+.card-description {
+  color: #6b7280;
+  margin: 0 0 16px 0;
+}
+
+.select {
+  width: 100%;
+  max-width: 400px;
+  padding: 10px 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 14px;
+  margin-bottom: 16px;
+  background: white;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-primary:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-secondary:hover {
+  background: #f9fafb;
+}
+
+.back-button {
+  margin-top: 24px;
+}
+</style>

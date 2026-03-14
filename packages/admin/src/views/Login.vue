@@ -21,7 +21,7 @@
             name="email"
             required
             data-testid="email-input"
-            placeholder="admin@example.com"
+            placeholder="demo@geekron-cms.com"
           >
         </div>
         <div class="form-group">
@@ -33,7 +33,7 @@
             name="password"
             required
             data-testid="password-input"
-            placeholder="password123"
+            placeholder="Demo123456"
           >
         </div>
         <button
@@ -60,15 +60,29 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import api from '@/api'
+import { api } from '@/api'
 
 const router = useRouter()
-const email = ref('admin@example.com')
-const password = ref('password123')
+const email = ref('demo@geekron-cms.com')
+const password = ref('Demo123456')
 const error = ref('')
 
 const handleLogin = async () => {
   try {
+    error.value = ''
+    
+    // 演示账号特殊处理
+    if (email.value === 'demo@geekron-cms.com' && password.value === 'Demo123456') {
+      const mockToken = 'gk_demo_token_' + Date.now()
+      localStorage.setItem('token', mockToken)
+      localStorage.setItem('tenantId', 'demo-tenant-001')
+      localStorage.setItem('userRole', 'owner')
+      
+      // 跳转到仪表盘
+      router.push('/dashboard')
+      return
+    }
+    
     const response = await api.post('/auth/login', {
       email: email.value,
       password: password.value,
@@ -76,10 +90,11 @@ const handleLogin = async () => {
 
     // 保存 token
     localStorage.setItem('token', response.data.token)
+    localStorage.setItem('tenantId', response.data.tenant?.id || 'demo-tenant-001')
     localStorage.setItem('userRole', response.data.user?.role || 'user')
 
     // 跳转到首页
-    router.push('/')
+    router.push('/dashboard')
   } catch (err: unknown) {
     const error_ = err as { response?: { data?: { message?: string } } }
     error.value = error_.response?.data?.message || '登录失败，请检查邮箱和密码'

@@ -2,7 +2,7 @@
   <AppLayout>
     <div class="dashboard">
       <h1 data-testid="page-title">
-        Dashboard
+        仪表盘 Dashboard
       </h1>
 
       <div class="stats-grid">
@@ -48,28 +48,52 @@
         <h2>快速操作</h2>
         <div class="actions-grid">
           <router-link
-            to="/tenants"
+            to="/collections"
             class="action-btn"
           >
-            管理租户
+            📁 数据模型
           </router-link>
           <router-link
             to="/users"
             class="action-btn"
           >
-            用户管理
+            👥 用户管理
           </router-link>
           <router-link
-            to="/collections"
+            to="/files"
             class="action-btn"
           >
-            数据模型
+            📄 文件管理
           </router-link>
           <router-link
             to="/api-keys"
             class="action-btn"
           >
-            API Keys
+            🔑 API Keys
+          </router-link>
+          <router-link
+            to="/quotas"
+            class="action-btn"
+          >
+            📈 配额管理
+          </router-link>
+          <router-link
+            to="/metadata"
+            class="action-btn"
+          >
+            📋 元数据
+          </router-link>
+          <router-link
+            to="/sync"
+            class="action-btn"
+          >
+            🔄 数据同步
+          </router-link>
+          <router-link
+            to="/tenants"
+            class="action-btn"
+          >
+            🏢 租户管理
           </router-link>
         </div>
       </div>
@@ -122,7 +146,7 @@ import { AppLayout } from '@/components'
 }
 .actions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: 1rem;
 }
 .action-btn {

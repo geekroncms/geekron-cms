@@ -57,6 +57,83 @@
           >用户管理</span>
         </router-link>
         <router-link
+          to="/files"
+          class="nav-item"
+          :class="{ active: $route.path === '/files' }"
+        >
+          <span class="nav-icon">📄</span>
+          <span
+            v-if="!sidebarCollapsed"
+            class="nav-text"
+          >文件管理</span>
+        </router-link>
+        <router-link
+          to="/api-keys"
+          class="nav-item"
+          :class="{ active: $route.path === '/api-keys' }"
+        >
+          <span class="nav-icon">🔑</span>
+          <span
+            v-if="!sidebarCollapsed"
+            class="nav-text"
+          >API Keys</span>
+        </router-link>
+        <router-link
+          to="/quotas"
+          class="nav-item"
+          :class="{ active: $route.path === '/quotas' }"
+        >
+          <span class="nav-icon">📈</span>
+          <span
+            v-if="!sidebarCollapsed"
+            class="nav-text"
+          >配额管理</span>
+        </router-link>
+        <router-link
+          to="/metadata"
+          class="nav-item"
+          :class="{ active: $route.path === '/metadata' }"
+        >
+          <span class="nav-icon">📋</span>
+          <span
+            v-if="!sidebarCollapsed"
+            class="nav-text"
+          >元数据</span>
+        </router-link>
+        <router-link
+          to="/sync"
+          class="nav-item"
+          :class="{ active: $route.path === '/sync' }"
+        >
+          <span class="nav-icon">🔄</span>
+          <span
+            v-if="!sidebarCollapsed"
+            class="nav-text"
+          >数据同步</span>
+        </router-link>
+        <router-link
+          to="/workflow"
+          class="nav-item"
+          :class="{ active: $route.path === '/workflow' }"
+        >
+          <span class="nav-icon">🔀</span>
+          <span
+            v-if="!sidebarCollapsed"
+            class="nav-text"
+          >工作流管理</span>
+        </router-link>
+        <router-link
+          to="/tenants"
+          class="nav-item"
+          :class="{ active: $route.path === '/tenants' }"
+        >
+          <span class="nav-icon">🏢</span>
+          <span
+            v-if="!sidebarCollapsed"
+            class="nav-text"
+          >租户管理</span>
+        </router-link>
+        <router-link
           to="/settings"
           class="nav-item"
           :class="{ active: $route.path === '/settings' }"

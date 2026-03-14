@@ -1,14 +1,15 @@
 <template>
-  <div class="collections-page">
-    <header class="header">
-      <h1>数据模型管理</h1>
-      <button
-        class="btn-primary"
-        @click="showCreateModal = true"
-      >
-        + 新建模型
-      </button>
-    </header>
+  <AppLayout>
+    <div class="collections-page">
+      <header class="header">
+        <h1>数据模型管理</h1>
+        <button
+          class="btn-primary"
+          @click="showCreateModal = true"
+        >
+          + 新建模型
+        </button>
+      </header>
 
     <main class="content">
       <div
@@ -133,13 +134,15 @@
         </form>
       </div>
     </div>
-  </div>
+    </div>
+  </AppLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 
 import { collectionApi } from '@/api'
+import { AppLayout } from '@/components'
 
 interface Collection {
   id: string
@@ -196,7 +199,8 @@ function formatDate(dateStr?: string) {
 
 <style scoped>
 .collections-page {
-  padding: 2rem;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 .header {
   display: flex;
@@ -252,6 +256,13 @@ function formatDate(dateStr?: string) {
   padding: 1.5rem;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+}
+.card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
 }
 .card-header {
   display: flex;
@@ -295,6 +306,10 @@ function formatDate(dateStr?: string) {
 .card-actions {
   display: flex;
   gap: 0.75rem;
+  margin-top: auto;
+}
+.card-actions a {
+  text-decoration: none;
 }
 .btn-primary,
 .btn-secondary,
@@ -304,18 +319,32 @@ function formatDate(dateStr?: string) {
   border: none;
   cursor: pointer;
   font-size: 0.875rem;
+  transition: all 0.2s;
+  font-weight: 500;
 }
 .btn-primary {
   background: #667eea;
   color: #fff;
 }
+.btn-primary:hover {
+  background: #5a6fd6;
+  transform: translateY(-1px);
+}
 .btn-secondary {
   background: #e2e8f0;
   color: #333;
 }
+.btn-secondary:hover {
+  background: #cbd5e1;
+  transform: translateY(-1px);
+}
 .btn-danger {
   background: #e53e3e;
   color: #fff;
+}
+.btn-danger:hover {
+  background: #c53030;
+  transform: translateY(-1px);
 }
 .modal-overlay {
   position: fixed;
@@ -335,6 +364,19 @@ function formatDate(dateStr?: string) {
   border-radius: 12px;
   width: 100%;
   max-width: 500px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .modal h2 {
   margin-bottom: 1.5rem;
@@ -354,6 +396,13 @@ function formatDate(dateStr?: string) {
   border: 1px solid #ddd;
   border-radius: 6px;
   font-size: 1rem;
+  transition: all 0.2s;
+}
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 .modal-actions {
   display: flex;

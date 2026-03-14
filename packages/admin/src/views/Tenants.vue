@@ -185,6 +185,97 @@
           </div>
         </div>
       </div>
+
+      <!-- 编辑租户模态框 -->
+      <div
+        v-if="showEditModal"
+        class="modal-overlay"
+        @click="showEditModal = false"
+      >
+        <div
+          class="modal"
+          @click.stop
+        >
+          <div class="modal-header">
+            <h2>编辑租户</h2>
+            <button
+              class="close-btn"
+              @click="showEditModal = false"
+            >
+              ×
+            </button>
+          </div>
+          <div class="modal-body">
+            <form @submit.prevent="updateTenant">
+              <div class="form-group">
+                <label for="edit-name">名称</label>
+                <input
+                  id="edit-name"
+                  v-model="editingTenant!.name"
+                  type="text"
+                  required
+                  data-testid="edit-tenant-name-input"
+                >
+              </div>
+              <div class="form-group">
+                <label for="edit-subdomain">子域名</label>
+                <input
+                  id="edit-subdomain"
+                  v-model="editingTenant!.subdomain"
+                  type="text"
+                  required
+                  pattern="^[a-z][a-z0-9-]*[a-z0-9]$"
+                  data-testid="edit-tenant-subdomain-input"
+                >
+                <small>只能包含小写字母、数字和连字符</small>
+              </div>
+              <div class="form-group">
+                <label for="edit-email">邮箱</label>
+                <input
+                  id="edit-email"
+                  v-model="editingTenant!.email"
+                  type="email"
+                  required
+                  data-testid="edit-tenant-email-input"
+                >
+              </div>
+              <div class="form-group">
+                <label for="edit-plan">套餐</label>
+                <select
+                  id="edit-plan"
+                  v-model="editingTenant!.plan"
+                  data-testid="edit-tenant-plan-select"
+                >
+                  <option value="free">
+                    免费版
+                  </option>
+                  <option value="pro">
+                    专业版
+                  </option>
+                  <option value="enterprise">
+                    企业版
+                  </option>
+                </select>
+              </div>
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button
+              class="btn"
+              @click="showEditModal = false"
+            >
+              取消
+            </button>
+            <button
+              class="btn btn-primary"
+              data-testid="confirm-update-btn"
+              @click="updateTenant"
+            >
+              保存
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </AppLayout>
 </template>
@@ -192,7 +283,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 
-import api from '@/api'
+import { api } from '@/api'
 import { AppLayout } from '@/components'
 
 interface Tenant {
@@ -202,12 +293,14 @@ interface Tenant {
   email: string
   plan: string
   status: string
-  createdAt: string
+  created_at: string
 }
 
 const tenants = ref<Tenant[]>([])
 const loading = ref(true)
 const showCreateModal = ref(false)
+const showEditModal = ref(false)
+const editingTenant = ref<Tenant | null>(null)
 const newTenant = ref({
   name: '',
   subdomain: '',
@@ -237,12 +330,25 @@ const createTenant = async () => {
   }
 }
 
-const viewTenant = (_tenant: unknown) => {
-  // TODO: implement view tenant
+const viewTenant = (tenant: Tenant) => {
+  // 查看租户详情 - 这里可以跳转到详情页或显示详情模态框
+  alert(`租户详情:\n名称：${tenant.name}\n子域名：${tenant.subdomain}\n邮箱：${tenant.email}\n套餐：${tenant.plan}\n状态：${tenant.status}`)
 }
 
-const editTenant = (_tenant: unknown) => {
-  // TODO: implement edit tenant
+const editTenant = (tenant: Tenant) => {
+  editingTenant.value = { ...tenant }
+  showEditModal.value = true
+}
+
+const updateTenant = async () => {
+  if (!editingTenant.value) return
+  try {
+    await api.put(`/tenants/${editingTenant.value.id}`, editingTenant.value)
+    showEditModal.value = false
+    await fetchTenants()
+  } catch {
+    alert('更新失败')
+  }
 }
 
 const toggleStatus = async (tenant: Tenant) => {
@@ -435,5 +541,17 @@ onMounted(() => {
   text-align: center;
   padding: 3rem;
   color: #6c757d;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #6c757d;
+}
+
+.close-btn:hover {
+  color: #1a1a1a;
 }
 </style>
